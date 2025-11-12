@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - FPay</title>
+    <link rel="stylesheet" href="/mobile.css">
     <style>
         * {
             margin: 0;
@@ -312,7 +313,12 @@
     <div id="adminContent" style="display: none;">
         <nav>
             <div class="nav-brand">🚛 FPay Admin</div>
-            <div class="nav-links">
+            <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
                 <a href="/">Home</a>
                 <a href="/invoices.html">Invoices</a>
                 <a href="/payments.html">Payments</a>
@@ -449,6 +455,14 @@
         // Check if already authenticated in session
         if (sessionStorage.getItem('adminAuth') === 'true') {
             showAdminPanel();
+        }
+
+        // Mobile menu toggle
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            const hamburger = document.querySelector('.hamburger');
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
         }
 
         function checkPin() {

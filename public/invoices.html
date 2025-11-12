@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoices - FPay</title>
+    <link rel="stylesheet" href="/mobile.css">
     <style>
         * {
             margin: 0;
@@ -219,7 +220,12 @@
 <body>
     <nav>
         <div class="nav-brand">🚛 FPay</div>
-        <div class="nav-links">
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="nav-links" id="navLinks">
             <a href="/">Home</a>
             <a href="/invoices.html" class="active">Invoices</a>
             <a href="/payments.html">Payments</a>
@@ -292,6 +298,7 @@
                 <tbody id="invoicesBody">
                 </tbody>
             </table>
+            <div id="invoicesCards" class="mobile-cards" style="display: none;"></div>
         </div>
     </div>
 
@@ -339,15 +346,25 @@
             document.getElementById('overdueCount').textContent = overdueCount;
         }
 
+        // Mobile menu toggle
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            const hamburger = document.querySelector('.hamburger');
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+
         function displayInvoices(invoices) {
             const tbody = document.getElementById('invoicesBody');
+            const cards = document.getElementById('invoicesCards');
             tbody.innerHTML = '';
+            cards.innerHTML = '';
 
             invoices.forEach(invoice => {
-                const row = document.createElement('tr');
-
                 const route = `${invoice.shipment?.origin?.city || 'N/A'}, ${invoice.shipment?.origin?.state || ''} → ${invoice.shipment?.destination?.city || 'N/A'}, ${invoice.shipment?.destination?.state || ''}`;
 
+                // Desktop table row
+                const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="invoice-details">${invoice.invoiceNumber}</td>
                     <td>${invoice.customer?.name || 'N/A'}</td>
@@ -358,9 +375,52 @@
                     <td>${new Date(invoice.issueDate).toLocaleDateString()}</td>
                     <td>${new Date(invoice.dueDate).toLocaleDateString()}</td>
                 `;
-
                 tbody.appendChild(row);
+
+                // Mobile card
+                const card = document.createElement('div');
+                card.className = 'mobile-card';
+                card.innerHTML = `
+                    <div class="mobile-card-header">
+                        <div class="mobile-card-title">${invoice.invoiceNumber}</div>
+                        <span class="status-badge status-${invoice.status}">${invoice.status.replace('_', ' ')}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Customer:</span>
+                        <span class="mobile-card-value">${invoice.customer?.name || 'N/A'}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Carrier:</span>
+                        <span class="mobile-card-value">${invoice.carrier?.name || 'N/A'}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Route:</span>
+                        <span class="mobile-card-value">${route}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Amount:</span>
+                        <span class="mobile-card-value amount">$${(invoice.totalAmount || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Issue Date:</span>
+                        <span class="mobile-card-value">${new Date(invoice.issueDate).toLocaleDateString()}</span>
+                    </div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">Due Date:</span>
+                        <span class="mobile-card-value">${new Date(invoice.dueDate).toLocaleDateString()}</span>
+                    </div>
+                `;
+                cards.appendChild(card);
             });
+
+            // Show/hide based on screen size
+            if (window.innerWidth <= 768) {
+                document.getElementById('invoicesTable').style.display = 'none';
+                cards.style.display = 'block';
+            } else {
+                document.getElementById('invoicesTable').style.display = 'table';
+                cards.style.display = 'none';
+            }
         }
 
         function filterInvoices() {

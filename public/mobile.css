@@ -1,0 +1,267 @@
+/* Mobile Responsive Styles */
+
+/* Hamburger Menu */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px;
+    background: none;
+    border: none;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background: #667eea;
+    border-radius: 2px;
+    transition: all 0.3s;
+}
+
+.hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translateY(10px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translateY(-10px);
+}
+
+/* Mobile Navigation */
+@media (max-width: 768px) {
+    .hamburger {
+        display: flex;
+    }
+
+    nav {
+        flex-wrap: wrap;
+        padding: 15px 20px;
+    }
+
+    .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 0;
+        margin-top: 15px;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links a {
+        padding: 12px 16px;
+        border-radius: 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .nav-links a:last-child {
+        border-bottom: none;
+    }
+
+    /* Container adjustments */
+    .container {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    /* Page wrapper */
+    .page-wrapper {
+        min-height: auto;
+        padding: 10px 0;
+    }
+
+    /* Headings */
+    h1 {
+        font-size: 2em;
+    }
+
+    .subtitle {
+        font-size: 1em;
+    }
+
+    /* Stats grids */
+    .stats-bar, .stats-grid, .admin-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .stat-card, .stat-box, .admin-card {
+        padding: 15px;
+    }
+
+    .stat-value {
+        font-size: 1.5em;
+    }
+
+    /* Filters */
+    .filters {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+    }
+
+    /* Tables - Hide on mobile, show cards instead */
+    .table-container table {
+        display: none;
+    }
+
+    .mobile-cards {
+        display: block;
+    }
+
+    /* Form adjustments */
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-section {
+        padding: 15px;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 14px 20px;
+        font-size: 1em;
+    }
+
+    /* PIN dialog */
+    .pin-dialog {
+        padding: 30px 20px;
+        max-width: 90%;
+    }
+
+    .pin-input {
+        font-size: 1.2em;
+    }
+}
+
+/* Mobile Cards for Tables */
+.mobile-cards {
+    display: none;
+}
+
+.mobile-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.mobile-card-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
+.mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.mobile-card-row:last-child {
+    border-bottom: none;
+}
+
+.mobile-card-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.mobile-card-value {
+    color: #333;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+/* Smaller screens */
+@media (max-width: 480px) {
+    .stats-bar, .stats-grid, .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    .nav-brand {
+        font-size: 1.3em;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Touch-friendly enhancements */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .nav-links a {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .btn {
+        min-height: 44px;
+    }
+
+    select, input {
+        min-height: 44px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .nav-links a:hover {
+        background: inherit;
+        color: inherit;
+    }
+
+    .nav-links a.active {
+        background: #667eea;
+        color: white;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+    .page-wrapper {
+        min-height: auto;
+    }
+
+    nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+}

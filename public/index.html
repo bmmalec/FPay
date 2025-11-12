@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Freight Payment Platform - FPay</title>
+    <link rel="stylesheet" href="/mobile.css">
     <style>
         * {
             margin: 0;
@@ -191,7 +192,12 @@
 <body>
     <nav>
         <div class="nav-brand">🚛 FPay</div>
-        <div class="nav-links">
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="nav-links" id="navLinks">
             <a href="/" class="active">Home</a>
             <a href="/invoices.html">Invoices</a>
             <a href="/payments.html">Payments</a>
@@ -261,6 +267,14 @@
     </div>
 
     <script>
+        // Mobile menu toggle
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            const hamburger = document.querySelector('.hamburger');
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+
         // API Health Check
         async function checkSystemHealth() {
             const statusElement = document.getElementById('systemStatus');
