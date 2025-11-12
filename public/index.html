@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPay - MongoDB Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+        }
+
+        .success {
+            background: #efe;
+            color: #363;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #363;
+            margin-bottom: 20px;
+        }
+
+        .record {
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .record:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .record-title {
+            font-size: 24px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .record-status {
+            background: #4caf50;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .record-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .record-field {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .field-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .field-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .metadata {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .metadata-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .metadata-content {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FPay</h1>
+            <p>MongoDB Integration Test</p>
+        </div>
+
+        <div class="card">
+            <div id="content">
+                <div class="loading">Loading records from MongoDB...</div>
+            </div>
+            <button class="refresh-btn" onclick="loadRecords()">Refresh Records</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadRecords() {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = '<div class="loading">Loading records from MongoDB...</div>';
+
+            try {
+                const response = await fetch('/api/records');
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch records');
+                }
+
+                if (result.count === 0) {
+                    contentDiv.innerHTML = '<div class="error">No records found in the database.</div>';
+                    return;
+                }
+
+                let html = `
+                    <div class="success">
+                        Successfully connected to MongoDB! Found ${result.count} record(s).
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${result.count}</div>
+                            <div class="stat-label">Total Records</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${result.data[0].amount}</div>
+                            <div class="stat-label">${result.data[0].currency}</div>
+                        </div>
+                    </div>
+                `;
+
+                result.data.forEach(record => {
+                    html += `
+                        <div class="record">
+                            <div class="record-header">
+                                <div class="record-title">${record.name}</div>
+                                <div class="record-status">${record.status}</div>
+                            </div>
+                            <div class="record-body">
+                                <div class="record-field">
+                                    <div class="field-label">Type</div>
+                                    <div class="field-value">${record.type}</div>
+                                </div>
+                                <div class="record-field">
+                                    <div class="field-label">Amount</div>
+                                    <div class="field-value">${record.amount} ${record.currency}</div>
+                                </div>
+                                <div class="record-field">
+                                    <div class="field-label">Created At</div>
+                                    <div class="field-value">${new Date(record.createdAt).toLocaleString()}</div>
+                                </div>
+                                <div class="record-field">
+                                    <div class="field-label">Record ID</div>
+                                    <div class="field-value">${record._id}</div>
+                                </div>
+                            </div>
+                            ${record.metadata ? `
+                                <div class="metadata">
+                                    <div class="metadata-title">Metadata</div>
+                                    <div class="metadata-content">${JSON.stringify(record.metadata, null, 2)}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+
+                contentDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading records:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load records when page loads
+        document.addEventListener('DOMContentLoaded', loadRecords);
+    </script>
+</body>
+</html>
