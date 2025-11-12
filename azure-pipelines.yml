@@ -98,29 +98,4 @@ stages:
                     appName: '$(azureWebAppName)'
                     package: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
                     runtimeStack: 'NODE|18-lts'
-                    startUpCommand: 'npm start'
-
-                - task: AzureAppServiceSettings@1
-                  displayName: 'Configure App Settings'
-                  inputs:
-                    azureSubscription: '$(azureSubscription)'
-                    appName: '$(azureWebAppName)'
-                    resourceGroupName: '$(ResourceGroupName)'
-                    appSettings: |
-                      [
-                        {
-                          "name": "MONGODB_URI",
-                          "value": "mongodb+srv://rallyadmin:h0Gsl9Eb25pU3ubi@rallydevcluster.nmgh40m.mongodb.net/fpay-dev?retryWrites=true&w=majority&appName=RallyDevCluster",
-                          "slotSetting": false
-                        },
-                        {
-                          "name": "NODE_ENV",
-                          "value": "production",
-                          "slotSetting": false
-                        },
-                        {
-                          "name": "PORT",
-                          "value": "8080",
-                          "slotSetting": false
-                        }
-                      ]
+                    startUpCommand: 'npm install --production && npm start'
