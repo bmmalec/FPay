@@ -33,9 +33,9 @@ stages:
               versionSpec: '$(nodeVersion)'
 
           - script: |
-              npm install
+              npm ci --production
               npm run test
-            displayName: 'Install dependencies and run tests'
+            displayName: 'Install production dependencies and run tests'
             continueOnError: true
 
           - task: CopyFiles@2
@@ -49,8 +49,11 @@ stages:
                 !.gitignore
                 !.env
                 !.env.*
-                !node_modules/**
+                !.env.example
                 !*.md
+                !.deployment
+                !web.config
+                !AZURE_*.md
               TargetFolder: '$(Build.ArtifactStagingDirectory)/app'
               CleanTargetFolder: true
 
@@ -98,4 +101,4 @@ stages:
                     appName: '$(azureWebAppName)'
                     package: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
                     runtimeStack: 'NODE|18-lts'
-                    startUpCommand: 'npm install --production && npm start'
+                    startUpCommand: 'npm start'
