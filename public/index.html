@@ -70,6 +70,41 @@
             margin-top: 20px;
         }
 
+        .status.offline {
+            background: #dc3545;
+        }
+
+        .status.checking {
+            background: #ffc107;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -119,7 +154,22 @@
                 This platform streamlines the entire payment process for freight services,
                 from invoice management to automated payment processing.
             </p>
-            <span class="status">✓ System Online</span>
+            <span class="status checking" id="systemStatus">⏳ Checking System...</span>
+
+            <div class="stats-grid" id="statsGrid" style="display: none;">
+                <div class="stat-box">
+                    <div class="stat-value" id="dbStatus">-</div>
+                    <div class="stat-label">Database</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="apiStatus">-</div>
+                    <div class="stat-label">API</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="uptime">-</div>
+                    <div class="stat-label">Uptime</div>
+                </div>
+            </div>
         </div>
 
         <div class="features">
@@ -154,6 +204,41 @@
     </div>
 
     <script>
+        // API Health Check
+        async function checkSystemHealth() {
+            const statusElement = document.getElementById('systemStatus');
+            const statsGrid = document.getElementById('statsGrid');
+
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                if (response.ok && data.status === 'healthy') {
+                    statusElement.textContent = '✓ System Online';
+                    statusElement.className = 'status';
+
+                    // Show stats
+                    statsGrid.style.display = 'grid';
+                    document.getElementById('dbStatus').textContent =
+                        data.mongodb === 'connected' ? '✓' : '✗';
+                    document.getElementById('apiStatus').textContent = '✓';
+
+                    // Format uptime
+                    const uptime = Math.floor(data.uptime);
+                    const hours = Math.floor(uptime / 3600);
+                    const minutes = Math.floor((uptime % 3600) / 60);
+                    document.getElementById('uptime').textContent =
+                        `${hours}h ${minutes}m`;
+                } else {
+                    throw new Error('System unhealthy');
+                }
+            } catch (error) {
+                statusElement.textContent = '✗ System Offline';
+                statusElement.className = 'status offline';
+                console.error('Health check failed:', error);
+            }
+        }
+
         // Display build information
         document.addEventListener('DOMContentLoaded', function() {
             const footer = document.querySelector('footer p');
@@ -161,6 +246,12 @@
                 ? footer.textContent.replace('${ENVIRONMENT}', 'Production')
                 : footer.textContent;
             footer.textContent = environment;
+
+            // Check system health on load
+            checkSystemHealth();
+
+            // Refresh health check every 30 seconds
+            setInterval(checkSystemHealth, 30000);
         });
     </script>
 </body>

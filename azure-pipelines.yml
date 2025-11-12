@@ -1,5 +1,5 @@
 # Azure Pipeline for FPay - Freight Payment Platform
-# This pipeline builds and deploys the application to Azure Web App
+# This pipeline builds and deploys the Node.js application with MongoDB to Azure Web App
 
 trigger:
   branches:
@@ -17,26 +17,40 @@ variables:
   azureSubscription: 'Azure-Service-Connection'
   # Build artifact name
   artifactName: 'fpay-build'
+  # Node.js version
+  nodeVersion: '18.x'
 
 stages:
   - stage: Build
     displayName: 'Build Stage'
     jobs:
       - job: BuildJob
-        displayName: 'Build FPay Application'
+        displayName: 'Build FPay Node.js Application'
         steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+
+          - script: |
+              npm install
+              npm run test
+            displayName: 'Install dependencies and run tests'
+            continueOnError: true
+
           - task: CopyFiles@2
             displayName: 'Copy application files'
             inputs:
               SourceFolder: '$(Build.SourcesDirectory)'
               Contents: |
-                **/*.html
-                **/*.css
-                **/*.js
-                **/*.json
+                **/*
                 !azure-pipelines.yml
                 !.git/**
                 !.gitignore
+                !.env
+                !.env.*
+                !node_modules/**
+                !*.md
               TargetFolder: '$(Build.ArtifactStagingDirectory)/app'
               CleanTargetFolder: true
 
@@ -80,7 +94,33 @@ stages:
                   displayName: 'Deploy to Azure Web App'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
-                    appType: 'webApp'
+                    appType: 'webAppLinux'
                     appName: '$(azureWebAppName)'
                     package: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-                    deploymentMethod: 'auto'
+                    runtimeStack: 'NODE|18-lts'
+                    startUpCommand: 'npm start'
+
+                - task: AzureAppServiceSettings@1
+                  displayName: 'Configure App Settings'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appName: '$(azureWebAppName)'
+                    resourceGroupName: '$(ResourceGroupName)'
+                    appSettings: |
+                      [
+                        {
+                          "name": "MONGODB_URI",
+                          "value": "mongodb+srv://rallyadmin:h0Gsl9Eb25pU3ubi@rallydevcluster.nmgh40m.mongodb.net/fpay-dev?retryWrites=true&w=majority&appName=RallyDevCluster",
+                          "slotSetting": false
+                        },
+                        {
+                          "name": "NODE_ENV",
+                          "value": "production",
+                          "slotSetting": false
+                        },
+                        {
+                          "name": "PORT",
+                          "value": "8080",
+                          "slotSetting": false
+                        }
+                      ]
