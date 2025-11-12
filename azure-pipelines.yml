@@ -33,7 +33,7 @@ stages:
               versionSpec: '$(nodeVersion)'
 
           - script: |
-              npm ci --production
+              npm install --production
               npm run test
             displayName: 'Install production dependencies and run tests'
             continueOnError: true
