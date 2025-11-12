@@ -18,7 +18,7 @@ variables:
   # Build artifact name
   artifactName: 'fpay-build'
   # Node.js version
-  nodeVersion: '18.x'
+  nodeVersion: '24.x'
 
 stages:
   - stage: Build
@@ -100,5 +100,5 @@ stages:
                     appType: 'webAppLinux'
                     appName: '$(azureWebAppName)'
                     package: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-                    runtimeStack: 'NODE|18-lts'
+                    runtimeStack: 'NODE|24-lts'
                     startUpCommand: 'npm start'
