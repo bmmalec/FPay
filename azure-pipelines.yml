@@ -1,0 +1,86 @@
+# Azure Pipeline for FPay - Freight Payment Platform
+# This pipeline builds and deploys the application to Azure Web App
+
+trigger:
+  branches:
+    include:
+      - main
+      - claude/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Azure Web App name - UPDATE THIS with your actual Azure Web App name
+  azureWebAppName: 'fpay-webapp'
+  # Azure subscription connection - UPDATE THIS with your service connection name
+  azureSubscription: 'Azure-Service-Connection'
+  # Build artifact name
+  artifactName: 'fpay-build'
+
+stages:
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build FPay Application'
+        steps:
+          - task: CopyFiles@2
+            displayName: 'Copy application files'
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)'
+              Contents: |
+                **/*.html
+                **/*.css
+                **/*.js
+                **/*.json
+                !azure-pipelines.yml
+                !.git/**
+                !.gitignore
+              TargetFolder: '$(Build.ArtifactStagingDirectory)/app'
+              CleanTargetFolder: true
+
+          - task: ArchiveFiles@2
+            displayName: 'Archive application files'
+            inputs:
+              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/app'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+              replaceExistingArchive: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish build artifacts'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+              ArtifactName: '$(artifactName)'
+              publishLocation: 'Container'
+
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployWeb
+        displayName: 'Deploy to Azure Web App'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download build artifacts'
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: '$(artifactName)'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure Web App'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webApp'
+                    appName: '$(azureWebAppName)'
+                    package: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
+                    deploymentMethod: 'auto'
