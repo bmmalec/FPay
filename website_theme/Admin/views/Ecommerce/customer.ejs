@@ -1,0 +1,269 @@
+<%- contentFor('HeaderCss') %>
+
+<!-- DataTables -->
+<link href="public/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css" />
+
+<!-- Responsive datatable examples -->
+<link href="public/assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet" type="text/css" /> 
+
+<%- contentFor('breadcrumb') %>
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0">Customers</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">Ecommerce</a></li>
+                    <li class="breadcrumb-item active">Customers</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<%- contentFor('body') %>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div>
+                    <a href="javascript:void(0);" class="btn btn-success mb-2"><i class="mdi mdi-plus me-2"></i> Add Customer</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap table-check">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="customercheckAll">
+                                        <label class="form-check-label mb-0" for="customercheckAll">&nbsp;</label>
+                                    </div>
+                                </th>
+                                <th>Customer</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Wallet Balance</th>
+                                <th>Joining Date</th>
+                                <th style="width: 120px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-data">
+                            <!-- Data will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Insert Modal -->
+                <div class="modal fade" id="insertModal" tabindex="-1" aria-labelledby="insertModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="insertModalLabel">Add New Customer</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="insertForm">
+                                    <div class="mb-3">
+                                        <label for="insertName" class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="insertName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="insertEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="insertEmail" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="insertPhone" class="form-label">Phone</label>
+                                        <input type="text" class="form-control" id="insertPhone" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="insertBalance" class="form-label">Wallet Balance</label>
+                                        <input type="number" class="form-control" id="insertBalance" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="insertDate" class="form-label">Joining Date</label>
+                                        <input type="date" class="form-control" id="insertDate" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Add Customer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Edit Modal -->
+                <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editModalLabel">Edit Customer</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editForm">
+                                    <input type="hidden" id="editId">
+                                    <div class="mb-3">
+                                        <label for="editName" class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="editName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="editEmail" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editPhone" class="form-label">Phone</label>
+                                        <input type="text" class="form-control" id="editPhone" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editBalance" class="form-label">Wallet Balance</label>
+                                        <input type="number" class="form-control" id="editBalance" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="editDate" class="form-label">Joining Date</label>
+                                        <input type="date" class="form-control" id="editDate" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update Customer</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- contentFor('FooterJs') %>
+
+ <!-- Required datatable js -->
+ <script src="public/assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+ <script src="public/assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+ 
+ <!-- Responsive examples -->
+ <script src="public/assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+ <script src="public/assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js"></script>
+
+ <script src="public/assets/js/pages/ecommerce-datatables.init.js"></script>
+ 
+ <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchCustomers();
+
+        document.getElementById('insertForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            insertCustomer();
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            updateCustomer();
+        });
+    });
+
+    function fetchCustomers() {
+        fetch('/api/customers')
+            .then(response => response.json())
+            .then(data => {
+                const customerData = document.getElementById('customer-data');
+                customerData.innerHTML = data.map(customer => `
+                    <tr>
+                        <td>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="customercheck${customer.id}">
+                                <label class="form-check-label mb-0" for="customercheck${customer.id}">&nbsp;</label>
+                            </div>
+                        </td>
+                        <td>${customer.name}</td>
+                        <td>${customer.email}</td>
+                        <td>${customer.phone}</td>
+                        <td>$ ${customer.balance}</td>
+                        <td>${customer.joiningDate}</td>
+                        <td id="tooltip-container${customer.id}">
+                            <a href="javascript:void(0);" class="me-3 text-primary" data-bs-container="#tooltip-container${customer.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit" onclick="showEditModal(${customer.id}, '${customer.name}', '${customer.email}', '${customer.phone}', ${customer.balance}, '${customer.joiningDate}')">
+                                <i class="mdi mdi-pencil font-size-18"></i>
+                            </a>
+                            <a href="javascript:void(0);" class="text-danger" data-bs-container="#tooltip-container${customer.id}" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete" onclick="deleteCustomer(${customer.id})">
+                                <i class="mdi mdi-trash-can font-size-18"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(error => console.error('Error fetching customer data:', error));
+    }
+
+    function insertCustomer() {
+        const name = document.getElementById('insertName').value;
+        const email = document.getElementById('insertEmail').value;
+        const phone = document.getElementById('insertPhone').value;
+        const balance = document.getElementById('insertBalance').value;
+        const joiningDate = document.getElementById('insertDate').value;
+
+        fetch('/api/customers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, phone, balance, joiningDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetchCustomers();
+            document.getElementById('insertForm').reset();
+            new bootstrap.Modal(document.getElementById('insertModal')).hide();
+        })
+        .catch(error => console.error('Error inserting customer:', error));
+    }
+
+    function showEditModal(id, name, email, phone, balance, joiningDate) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPhone').value = phone;
+        document.getElementById('editBalance').value = balance;
+        document.getElementById('editDate').value = joiningDate;
+
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+
+    function updateCustomer() {
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value;
+        const email = document.getElementById('editEmail').value;
+        const phone = document.getElementById('editPhone').value;
+        const balance = document.getElementById('editBalance').value;
+        const joiningDate = document.getElementById('editDate').value;
+
+        fetch(`/api/customers/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, phone, balance, joiningDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetchCustomers();
+            document.getElementById('editForm').reset();
+            new bootstrap.Modal(document.getElementById('editModal')).hide();
+        })
+        .catch(error => console.error('Error updating customer:', error));
+    }
+
+    function deleteCustomer(id) {
+        fetch(`/api/customers/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetchCustomers();
+        })
+        .catch(error => console.error('Error deleting customer:', error));
+    }
+</script>
+
+
+<%- contentFor('BottomJs') %>
