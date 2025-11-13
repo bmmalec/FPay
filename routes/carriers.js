@@ -361,6 +361,27 @@ router.put('/:id', async (req, res) => {
             });
         }
 
+        // Migrate old string notes to array format (schema migration)
+        if (carrier.notes && typeof carrier.notes === 'string') {
+            carrier.notes = [{
+                content: carrier.notes,
+                createdBy: 'System',
+                createdAt: carrier.updatedAt || carrier.createdAt || new Date(),
+                category: 'general',
+                pinned: false
+            }];
+        }
+
+        // Ensure notes is initialized as empty array if undefined
+        if (!carrier.notes) {
+            carrier.notes = [];
+        }
+
+        // Ensure auditTrail is initialized as empty array if undefined
+        if (!carrier.auditTrail) {
+            carrier.auditTrail = [];
+        }
+
         // Check if updating MC/DOT number conflicts with another carrier
         if (req.body.mcNumber || req.body.dotNumber) {
             const existingCarrier = await Carrier.findOne({

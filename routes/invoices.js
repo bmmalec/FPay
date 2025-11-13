@@ -121,11 +121,7 @@ router.post('/', async (req, res) => {
 // Update invoice
 router.put('/:id', async (req, res) => {
     try {
-        const invoice = await Invoice.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
+        const invoice = await Invoice.findById(req.params.id);
 
         if (!invoice) {
             return res.status(404).json({
@@ -133,6 +129,30 @@ router.put('/:id', async (req, res) => {
                 error: 'Invoice not found'
             });
         }
+
+        // Migrate old string notes to array format (schema migration)
+        if (invoice.notes && typeof invoice.notes === 'string') {
+            invoice.notes = [{
+                content: invoice.notes,
+                createdBy: 'System',
+                createdAt: invoice.updatedAt || invoice.createdAt || new Date(),
+                category: 'general',
+                pinned: false
+            }];
+        }
+
+        // Ensure notes is initialized as empty array if undefined
+        if (!invoice.notes) {
+            invoice.notes = [];
+        }
+
+        // Ensure auditTrail is initialized as empty array if undefined
+        if (!invoice.auditTrail) {
+            invoice.auditTrail = [];
+        }
+
+        Object.assign(invoice, req.body);
+        await invoice.save();
 
         res.json({
             success: true,
