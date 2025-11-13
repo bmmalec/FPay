@@ -12,11 +12,16 @@ const PORT = process.env.PORT || 3000;
 
 // Create edi_files directory on startup if it doesn't exist
 const ediDir = path.join(__dirname, 'edi_files');
-if (!fs.existsSync(ediDir)) {
-    fs.mkdirSync(ediDir, { recursive: true });
-    console.log('✅ Created edi_files directory');
-} else {
-    console.log('✅ edi_files directory exists');
+try {
+    if (!fs.existsSync(ediDir)) {
+        fs.mkdirSync(ediDir, { recursive: true });
+        console.log('✅ Created edi_files directory:', ediDir);
+    } else {
+        console.log('✅ edi_files directory exists:', ediDir);
+    }
+} catch (error) {
+    console.warn('⚠️ Could not create edi_files directory on startup:', error.message);
+    console.warn('⚠️ Directory will be created on first use');
 }
 
 // Middleware

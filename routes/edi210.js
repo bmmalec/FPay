@@ -245,10 +245,32 @@ router.get('/files', async (req, res) => {
         try {
             await fs.mkdir(ediDir, { recursive: true });
         } catch (error) {
-            // Directory might already exist
+            // If mkdir fails, check if directory exists
+            try {
+                await fs.access(ediDir);
+            } catch (accessError) {
+                // Directory doesn't exist and can't be created
+                return res.json({
+                    success: true,
+                    files: [],
+                    count: 0,
+                    message: 'EDI directory will be created on first file generation'
+                });
+            }
         }
 
-        const files = await fs.readdir(ediDir);
+        let files;
+        try {
+            files = await fs.readdir(ediDir);
+        } catch (error) {
+            // Directory doesn't exist yet
+            return res.json({
+                success: true,
+                files: [],
+                count: 0
+            });
+        }
+
         const ediFiles = files.filter(file => file.endsWith('.edi'));
 
         const fileDetails = await Promise.all(

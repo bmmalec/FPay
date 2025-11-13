@@ -302,17 +302,31 @@ class EDI210Generator {
     async saveToFile(ediContent, filename) {
         const ediDir = path.join(__dirname, '..', 'edi_files');
 
-        // Create directory if it doesn't exist
+        // Create directory if it doesn't exist - with robust error handling
         try {
             await fs.mkdir(ediDir, { recursive: true });
+            console.log('✅ EDI directory ready:', ediDir);
         } catch (error) {
-            console.error('Error creating EDI directory:', error);
+            // If mkdir fails, try to check if directory exists
+            try {
+                await fs.access(ediDir);
+                console.log('✅ EDI directory already exists:', ediDir);
+            } catch (accessError) {
+                console.error('❌ Error creating/accessing EDI directory:', error.message);
+                throw new Error(`Cannot create EDI directory: ${error.message}`);
+            }
         }
 
         const fileName = filename || `EDI210_${Date.now()}.edi`;
         const filePath = path.join(ediDir, fileName);
 
-        await fs.writeFile(filePath, ediContent, 'utf8');
+        try {
+            await fs.writeFile(filePath, ediContent, 'utf8');
+            console.log('✅ EDI file saved:', fileName);
+        } catch (error) {
+            console.error('❌ Error writing EDI file:', error.message);
+            throw new Error(`Cannot write EDI file: ${error.message}`);
+        }
 
         return filePath;
     }
