@@ -61,11 +61,13 @@ process.on('SIGINT', async () => {
 const paymentsRouter = require('./routes/payments');
 const invoicesRouter = require('./routes/invoices');
 const edi210Router = require('./routes/edi210');
+const carriersRouter = require('./routes/carriers');
 
 // API Routes
 app.use('/api/payments', paymentsRouter);
 app.use('/api/invoices', invoicesRouter);
 app.use('/api/edi210', edi210Router);
+app.use('/api/carriers', carriersRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -86,7 +88,8 @@ app.get('/api', (req, res) => {
             health: '/api/health',
             payments: '/api/payments',
             invoices: '/api/invoices',
-            edi210: '/api/edi210'
+            edi210: '/api/edi210',
+            carriers: '/api/carriers'
         }
     });
 });

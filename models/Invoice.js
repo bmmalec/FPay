@@ -39,6 +39,11 @@ const invoiceSchema = new mongoose.Schema({
         scac: String, // Standard Carrier Alpha Code
         carrierReference: String
     },
+    carrierId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Carrier',
+        index: true
+    },
     customer: {
         name: {
             type: String,
