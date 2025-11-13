@@ -34,9 +34,8 @@ tmp/
 temp/
 *.tmp
 
-# EDI files (but keep the directory structure)
-edi_files/*.edi
-!edi_files/.gitkeep
+# EDI files (stored in /home/edi_files on Azure, not in repo)
+*.edi
 
 # Azure
 .azure/

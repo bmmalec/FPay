@@ -300,7 +300,9 @@ class EDI210Generator {
      * @returns {Promise<String>} File path
      */
     async saveToFile(ediContent, filename) {
-        const ediDir = path.join(__dirname, '..', 'edi_files');
+        // Azure App Service: /home/site/wwwroot is read-only
+        // Use /home/edi_files for writable persistent storage
+        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
 
         // Create directory if it doesn't exist - with robust error handling
         try {

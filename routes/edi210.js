@@ -239,7 +239,9 @@ router.post('/process', async (req, res) => {
  */
 router.get('/files', async (req, res) => {
     try {
-        const ediDir = path.join(__dirname, '..', 'edi_files');
+        // Azure App Service: /home/site/wwwroot is read-only
+        // Use /home/edi_files for writable persistent storage
+        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
 
         // Create directory if it doesn't exist
         try {
@@ -307,7 +309,9 @@ router.get('/files', async (req, res) => {
  */
 router.get('/files/:fileName', async (req, res) => {
     try {
-        const ediDir = path.join(__dirname, '..', 'edi_files');
+        // Azure App Service: /home/site/wwwroot is read-only
+        // Use /home/edi_files for writable persistent storage
+        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
         const filePath = path.join(ediDir, req.params.fileName);
 
         const content = await fs.readFile(filePath, 'utf8');
@@ -332,7 +336,9 @@ router.get('/files/:fileName', async (req, res) => {
  */
 router.post('/process-file/:fileName', async (req, res) => {
     try {
-        const ediDir = path.join(__dirname, '..', 'edi_files');
+        // Azure App Service: /home/site/wwwroot is read-only
+        // Use /home/edi_files for writable persistent storage
+        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
         const filePath = path.join(ediDir, req.params.fileName);
 
         const ediContent = await fs.readFile(filePath, 'utf8');
