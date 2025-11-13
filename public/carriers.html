@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrier Management - FPay</title>
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        nav {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-links a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .toolbar select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .stats-bar {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-bottom: 20px;
+        }
+
+        thead tr {
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: #333;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-inactive {
+            background: #6c757d;
+            color: white;
+        }
+
+        .status-suspended {
+            background: #dc3545;
+            color: white;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .page-info {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #999;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .info-section h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .toolbar input,
+            .toolbar select,
+            .toolbar button {
+                width: 100%;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-brand">🚛 FPay Carriers</div>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="nav-links" id="navLinks">
+            <a href="/">Home</a>
+            <a href="/invoices.html">Invoices</a>
+            <a href="/payments.html">Payments</a>
+            <a href="/carriers.html" class="active">Carriers</a>
+            <a href="/admin.html">Admin</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>🚚 Carrier Management</h1>
+        <div class="subtitle">Manage motor carrier companies and transportation providers</div>
+
+        <div id="message" class="message"></div>
+
+        <div id="statsBar" class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Total Carriers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statActive">-</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statPending">-</div>
+                <div class="stat-label">Pending Approval</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statInactive">-</div>
+                <div class="stat-label">Inactive</div>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="Search by company name, MC, DOT, or SCAC...">
+            <select id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="pending_approval">Pending Approval</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+            </select>
+            <select id="serviceFilter">
+                <option value="">All Services</option>
+                <option value="LTL">LTL</option>
+                <option value="FTL">FTL</option>
+                <option value="Refrigerated">Refrigerated</option>
+                <option value="Flatbed">Flatbed</option>
+                <option value="Intermodal">Intermodal</option>
+                <option value="Hazmat">Hazmat</option>
+                <option value="Expedited">Expedited</option>
+                <option value="Parcel">Parcel</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadCarriers()">🔄 Refresh</button>
+            <button class="btn btn-success" onclick="showCreateModal()">➕ Add Carrier</button>
+        </div>
+
+        <div id="carriersTable"></div>
+
+        <div class="pagination">
+            <button id="prevPage" class="btn btn-primary">← Previous</button>
+            <span class="page-info" id="pageInfo">Page 1 of 1</span>
+            <button id="nextPage" class="btn btn-primary">Next →</button>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="carrierModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Carrier</h2>
+                <button class="btn btn-danger" onclick="closeModal()">✕ Close</button>
+            </div>
+            <form id="carrierForm" onsubmit="saveCarrier(event)">
+                <input type="hidden" id="carrierId">
+
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #667eea;">Basic Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company Name *</label>
+                        <input type="text" id="companyName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Type *</label>
+                        <select id="businessType" required>
+                            <option value="llc">LLC</option>
+                            <option value="corporation">Corporation</option>
+                            <option value="sole_proprietor">Sole Proprietor</option>
+                            <option value="partnership">Partnership</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>MC Number *</label>
+                        <input type="text" id="mcNumber" placeholder="MC-123456" required>
+                    </div>
+                    <div class="form-group">
+                        <label>DOT Number *</label>
+                        <input type="text" id="dotNumber" placeholder="DOT-1234567" required>
+                    </div>
+                    <div class="form-group">
+                        <label>SCAC Code</label>
+                        <input type="text" id="scac" placeholder="ABCD" maxlength="4">
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #667eea;">Contact Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="phone" placeholder="555-123-4567" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="url" id="website" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #667eea;">Address</h3>
+                <div class="form-group">
+                    <label>Street Address *</label>
+                    <input type="text" id="street" required>
+                </div>
+                <div class="form-group">
+                    <label>Street Address 2</label>
+                    <input type="text" id="street2">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City *</label>
+                        <input type="text" id="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label>State *</label>
+                        <input type="text" id="state" placeholder="CA" maxlength="2" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ZIP Code *</label>
+                        <input type="text" id="zip" placeholder="12345" required>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #667eea;">Service Types</h3>
+                <div class="form-group">
+                    <label>Services Offered (hold Ctrl/Cmd to select multiple) *</label>
+                    <select id="serviceTypes" multiple size="6" required>
+                        <option value="LTL">LTL (Less Than Truckload)</option>
+                        <option value="FTL">FTL (Full Truckload)</option>
+                        <option value="Refrigerated">Refrigerated</option>
+                        <option value="Flatbed">Flatbed</option>
+                        <option value="Intermodal">Intermodal</option>
+                        <option value="Hazmat">Hazmat</option>
+                        <option value="Expedited">Expedited</option>
+                        <option value="Parcel">Parcel</option>
+                        <option value="White Glove">White Glove</option>
+                        <option value="Oversize">Oversize/Heavy Haul</option>
+                    </select>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #667eea;">Financial Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Payment Terms *</label>
+                        <select id="paymentTerms" required>
+                            <option value="Net 15">Net 15</option>
+                            <option value="Net 30" selected>Net 30</option>
+                            <option value="Net 45">Net 45</option>
+                            <option value="Net 60">Net 60</option>
+                            <option value="Quick Pay">Quick Pay</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quick Pay Discount (%)</label>
+                        <input type="number" id="quickPayDiscount" min="0" max="10" step="0.1" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Credit Limit ($)</label>
+                        <input type="number" id="creditLimit" min="0" step="1000" value="100000">
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #667eea;">Status</h3>
+                <div class="form-group">
+                    <label>Carrier Status *</label>
+                    <select id="status" required>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="notes" placeholder="Internal notes about this carrier..."></textarea>
+                </div>
+
+                <div style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">💾 Save Carrier</button>
+                    <button type="button" class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content" id="viewModalContent">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let currentCarrierId = null;
+
+        // Mobile menu toggle
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            const hamburger = document.querySelector('.hamburger');
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+
+        function showMessage(text, type = 'success') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 5000);
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'active': 'status-active',
+                'pending_approval': 'status-pending',
+                'inactive': 'status-inactive',
+                'suspended': 'status-suspended'
+            };
+            return classes[status] || '';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'active': '✅ Active',
+                'pending_approval': '⏳ Pending',
+                'inactive': '⚫ Inactive',
+                'suspended': '🚫 Suspended'
+            };
+            return labels[status] || status;
+        }
+
+        async function loadStatistics() {
+            try {
+                const res = await fetch('/api/carriers/statistics');
+                const data = await res.json();
+
+                if (data.success) {
+                    const stats = data.statistics;
+                    document.getElementById('statTotal').textContent = stats.total;
+                    document.getElementById('statActive').textContent = stats.active;
+                    document.getElementById('statPending').textContent = stats.pending_approval || 0;
+                    document.getElementById('statInactive').textContent = stats.inactive;
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        async function loadCarriers(page = 1) {
+            const container = document.getElementById('carriersTable');
+            container.innerHTML = '<div class="loading">Loading carriers...</div>';
+
+            try {
+                const search = document.getElementById('searchInput').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const serviceFilter = document.getElementById('serviceFilter').value;
+                currentPage = page;
+
+                let url = `/api/carriers?page=${page}&limit=20&sortBy=createdAt&sortOrder=desc`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (statusFilter) url += `&status=${statusFilter}`;
+                if (serviceFilter) url += `&serviceType=${serviceFilter}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.success && data.data.length > 0) {
+                    let html = '<div style="overflow-x: auto;"><table>';
+                    html += '<thead><tr>';
+                    html += '<th>Company Name</th>';
+                    html += '<th>MC / DOT</th>';
+                    html += '<th>Location</th>';
+                    html += '<th>Services</th>';
+                    html += '<th style="text-align: center;">Status</th>';
+                    html += '<th style="text-align: center;">Actions</th>';
+                    html += '</tr></thead><tbody>';
+
+                    data.data.forEach(carrier => {
+                        html += '<tr>';
+                        html += `<td><strong>${carrier.companyName}</strong>`;
+                        if (carrier.generatedByAI) {
+                            html += '<br/><small style="color: #667eea;">🤖 AI Generated</small>';
+                        }
+                        html += '</td>';
+                        html += `<td><small>${carrier.mcNumber}<br/>${carrier.dotNumber}</small></td>`;
+                        html += `<td>${carrier.address.city}, ${carrier.address.state}</td>`;
+                        html += `<td><small>${carrier.serviceTypes.join(', ')}</small></td>`;
+                        html += `<td style="text-align: center;"><span class="status-badge ${getStatusBadgeClass(carrier.status)}">${getStatusLabel(carrier.status)}</span></td>`;
+                        html += '<td style="text-align: center;"><div class="action-buttons">';
+                        html += `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em;" onclick="viewCarrier('${carrier._id}')">👁️ View</button>`;
+                        html += `<button class="btn btn-warning" style="padding: 6px 12px; font-size: 0.85em;" onclick="editCarrier('${carrier._id}')">✏️ Edit</button>`;
+                        if (carrier.status === 'pending_approval') {
+                            html += `<button class="btn btn-success" style="padding: 6px 12px; font-size: 0.85em;" onclick="approveCarrier('${carrier._id}')">✅ Approve</button>`;
+                        }
+                        if (carrier.status === 'active') {
+                            html += `<button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85em;" onclick="deactivateCarrier('${carrier._id}')">🚫 Deactivate</button>`;
+                        }
+                        html += '</div></td>';
+                        html += '</tr>';
+                    });
+
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+
+                    // Update pagination
+                    if (data.pagination) {
+                        const pag = data.pagination;
+                        document.getElementById('pageInfo').textContent = `Page ${pag.page} of ${pag.pages} (${pag.total} total)`;
+                        document.getElementById('prevPage').disabled = !pag.hasPrev;
+                        document.getElementById('nextPage').disabled = !pag.hasNext;
+                    }
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No carriers found</h3>
+                            <p>Try adjusting your search filters or add a new carrier</p>
+                            <button class="btn btn-success" onclick="showCreateModal()">➕ Add Your First Carrier</button>
+                        </div>
+                    `;
+                }
+
+                await loadStatistics();
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state"><h3 style="color: #dc3545;">Error loading carriers</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Carrier';
+            document.getElementById('carrierForm').reset();
+            document.getElementById('carrierId').value = '';
+            currentCarrierId = null;
+            document.getElementById('carrierModal').classList.add('active');
+        }
+
+        async function editCarrier(id) {
+            try {
+                const res = await fetch(`/api/carriers/${id}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const carrier = data.data;
+                    currentCarrierId = id;
+
+                    document.getElementById('modalTitle').textContent = 'Edit Carrier';
+                    document.getElementById('carrierId').value = id;
+                    document.getElementById('companyName').value = carrier.companyName;
+                    document.getElementById('mcNumber').value = carrier.mcNumber;
+                    document.getElementById('dotNumber').value = carrier.dotNumber;
+                    document.getElementById('scac').value = carrier.scac || '';
+                    document.getElementById('businessType').value = carrier.businessType;
+                    document.getElementById('email').value = carrier.contact.email;
+                    document.getElementById('phone').value = carrier.contact.phone;
+                    document.getElementById('website').value = carrier.contact.website || '';
+                    document.getElementById('street').value = carrier.address.street;
+                    document.getElementById('street2').value = carrier.address.street2 || '';
+                    document.getElementById('city').value = carrier.address.city;
+                    document.getElementById('state').value = carrier.address.state;
+                    document.getElementById('zip').value = carrier.address.zip;
+                    document.getElementById('paymentTerms').value = carrier.paymentTerms;
+                    document.getElementById('quickPayDiscount').value = carrier.quickPayDiscount;
+                    document.getElementById('creditLimit').value = carrier.creditLimit;
+                    document.getElementById('status').value = carrier.status;
+                    document.getElementById('notes').value = carrier.notes || '';
+
+                    // Set service types
+                    const serviceSelect = document.getElementById('serviceTypes');
+                    for (let option of serviceSelect.options) {
+                        option.selected = carrier.serviceTypes.includes(option.value);
+                    }
+
+                    document.getElementById('carrierModal').classList.add('active');
+                } else {
+                    showMessage(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading carrier: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveCarrier(event) {
+            event.preventDefault();
+
+            const serviceSelect = document.getElementById('serviceTypes');
+            const selectedServices = Array.from(serviceSelect.selectedOptions).map(opt => opt.value);
+
+            if (selectedServices.length === 0) {
+                showMessage('Please select at least one service type', 'error');
+                return;
+            }
+
+            const carrierData = {
+                companyName: document.getElementById('companyName').value,
+                mcNumber: document.getElementById('mcNumber').value,
+                dotNumber: document.getElementById('dotNumber').value,
+                scac: document.getElementById('scac').value || undefined,
+                businessType: document.getElementById('businessType').value,
+                contact: {
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    website: document.getElementById('website').value || undefined
+                },
+                address: {
+                    street: document.getElementById('street').value,
+                    street2: document.getElementById('street2').value || undefined,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value.toUpperCase(),
+                    zip: document.getElementById('zip').value,
+                    country: 'USA'
+                },
+                serviceTypes: selectedServices,
+                paymentTerms: document.getElementById('paymentTerms').value,
+                quickPayDiscount: parseFloat(document.getElementById('quickPayDiscount').value),
+                creditLimit: parseFloat(document.getElementById('creditLimit').value),
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value || undefined
+            };
+
+            try {
+                let res;
+                if (currentCarrierId) {
+                    // Update existing carrier
+                    res = await fetch(`/api/carriers/${currentCarrierId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(carrierData)
+                    });
+                } else {
+                    // Create new carrier
+                    res = await fetch('/api/carriers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(carrierData)
+                    });
+                }
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage(`✅ Carrier ${currentCarrierId ? 'updated' : 'created'} successfully!`, 'success');
+                    closeModal();
+                    loadCarriers(currentPage);
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error saving carrier: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewCarrier(id) {
+            try {
+                const res = await fetch(`/api/carriers/${id}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const carrier = data.data;
+                    const content = document.getElementById('viewModalContent');
+
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <div>
+                                <h2>🚚 ${carrier.companyName}</h2>
+                                <span class="status-badge ${getStatusBadgeClass(carrier.status)}">${getStatusLabel(carrier.status)}</span>
+                            </div>
+                            <button class="btn btn-danger" onclick="closeViewModal()">✕ Close</button>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>📋 Basic Information</h4>
+                            <p><strong>MC Number:</strong> ${carrier.mcNumber}</p>
+                            <p><strong>DOT Number:</strong> ${carrier.dotNumber}</p>
+                            ${carrier.scac ? `<p><strong>SCAC:</strong> ${carrier.scac}</p>` : ''}
+                            <p><strong>Business Type:</strong> ${carrier.businessType}</p>
+                            <p><strong>Service Types:</strong> ${carrier.serviceTypes.join(', ')}</p>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>📞 Contact Information</h4>
+                            <p><strong>Email:</strong> <a href="mailto:${carrier.contact.email}">${carrier.contact.email}</a></p>
+                            <p><strong>Phone:</strong> <a href="tel:${carrier.contact.phone}">${carrier.contact.phone}</a></p>
+                            ${carrier.contact.website ? `<p><strong>Website:</strong> <a href="${carrier.contact.website}" target="_blank">${carrier.contact.website}</a></p>` : ''}
+                        </div>
+
+                        <div class="info-section">
+                            <h4>📍 Address</h4>
+                            <p>${carrier.address.street}</p>
+                            ${carrier.address.street2 ? `<p>${carrier.address.street2}</p>` : ''}
+                            <p>${carrier.address.city}, ${carrier.address.state} ${carrier.address.zip}</p>
+                            <p>${carrier.address.country}</p>
+                        </div>
+
+                        <div class="info-section">
+                            <h4>💰 Financial Information</h4>
+                            <p><strong>Payment Terms:</strong> ${carrier.paymentTerms}</p>
+                            <p><strong>Quick Pay Discount:</strong> ${carrier.quickPayDiscount}%</p>
+                            <p><strong>Credit Limit:</strong> $${carrier.creditLimit.toLocaleString()}</p>
+                        </div>
+
+                        ${carrier.insurance.cargoInsurance || carrier.insurance.liabilityInsurance ? `
+                        <div class="info-section">
+                            <h4>🛡️ Insurance Information</h4>
+                            ${carrier.insurance.cargoInsurance ? `
+                            <p><strong>Cargo Insurance:</strong> $${carrier.insurance.cargoInsurance.amount.toLocaleString()} (${carrier.insurance.cargoInsurance.provider})</p>
+                            <p style="margin-left: 20px;"><small>Policy: ${carrier.insurance.cargoInsurance.policyNumber}, Expires: ${new Date(carrier.insurance.cargoInsurance.expirationDate).toLocaleDateString()}</small></p>
+                            ` : ''}
+                            ${carrier.insurance.liabilityInsurance ? `
+                            <p><strong>Liability Insurance:</strong> $${carrier.insurance.liabilityInsurance.amount.toLocaleString()} (${carrier.insurance.liabilityInsurance.provider})</p>
+                            <p style="margin-left: 20px;"><small>Policy: ${carrier.insurance.liabilityInsurance.policyNumber}, Expires: ${new Date(carrier.insurance.liabilityInsurance.expirationDate).toLocaleDateString()}</small></p>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+
+                        ${carrier.notes ? `
+                        <div class="info-section">
+                            <h4>📝 Notes</h4>
+                            <p>${carrier.notes}</p>
+                        </div>
+                        ` : ''}
+
+                        ${carrier.generatedByAI ? `
+                        <div style="background: #e7f3ff; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea;">
+                            <p style="margin: 0; color: #667eea;"><strong>🤖 AI Generated</strong></p>
+                            <p style="margin: 5px 0 0 0; font-size: 0.9em;">This carrier was generated by ${carrier.aiMetadata.model} on ${new Date(carrier.aiMetadata.generatedAt).toLocaleString()}</p>
+                        </div>
+                        ` : ''}
+
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button class="btn btn-warning" onclick="closeViewModal(); editCarrier('${carrier._id}')">✏️ Edit Carrier</button>
+                            <button class="btn btn-danger" onclick="closeViewModal()">Close</button>
+                        </div>
+                    `;
+
+                    document.getElementById('viewModal').classList.add('active');
+                } else {
+                    showMessage(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error viewing carrier: ${error.message}`, 'error');
+            }
+        }
+
+        async function approveCarrier(id) {
+            if (!confirm('Approve this carrier and mark as active?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/carriers/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'active' })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage('✅ Carrier approved successfully!', 'success');
+                    loadCarriers(currentPage);
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error approving carrier: ${error.message}`, 'error');
+            }
+        }
+
+        async function deactivateCarrier(id) {
+            if (!confirm('Deactivate this carrier? They will no longer be able to submit new shipments.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/carriers/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'inactive' })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage('✅ Carrier deactivated successfully!', 'success');
+                    loadCarriers(currentPage);
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error deactivating carrier: ${error.message}`, 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('carrierModal').classList.remove('active');
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        // Event listeners
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                loadCarriers(currentPage - 1);
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            loadCarriers(currentPage + 1);
+        });
+
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadCarriers(1);
+            }, 500);
+        });
+
+        document.getElementById('statusFilter').addEventListener('change', () => {
+            loadCarriers(1);
+        });
+
+        document.getElementById('serviceFilter').addEventListener('change', () => {
+            loadCarriers(1);
+        });
+
+        // Close modals when clicking outside
+        document.getElementById('carrierModal').addEventListener('click', (e) => {
+            if (e.target.id === 'carrierModal') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('viewModal').addEventListener('click', (e) => {
+            if (e.target.id === 'viewModal') {
+                closeViewModal();
+            }
+        });
+
+        // Load carriers on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCarriers();
+        });
+    </script>
+</body>
+</html>
