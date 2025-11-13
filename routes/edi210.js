@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs').promises;
-const path = require('path');
 const EDI210Generator = require('../utils/edi210Generator');
 const Invoice = require('../models/Invoice');
+const EDIDocument = require('../models/EDIDocument');
 const Anthropic = require('@anthropic-ai/sdk');
 
 /**
  * POST /api/edi210/generate
- * Generate EDI 210 file from invoice data
+ * Generate EDI 210 document and save to database
  */
 router.post('/generate', async (req, res) => {
     try {
@@ -24,17 +23,44 @@ router.post('/generate', async (req, res) => {
 
         const generator = new EDI210Generator();
         const ediContent = generator.generate(invoiceData);
+        const controlNumber = generator.controlNumber;
 
-        // Generate filename
-        const fileName = `EDI210_${invoiceData.invoiceNumber || Date.now()}.edi`;
-        const filePath = await generator.saveToFile(ediContent, fileName);
+        // Parse the generated EDI to extract key data
+        const parsedData = generator.parse(ediContent);
+
+        // Save to database
+        const ediDoc = new EDIDocument({
+            ediType: '210',
+            controlNumber: controlNumber,
+            ediContent: ediContent,
+            parsedData: {
+                invoiceNumber: parsedData.invoiceNumber,
+                shipmentId: parsedData.shipmentId,
+                shipperName: parsedData.shipper?.name,
+                consigneeName: parsedData.consignee?.name,
+                billToName: parsedData.billTo?.name,
+                weight: parsedData.shipment?.weight,
+                amount: parsedData.netAmount || parsedData.amount?.total,
+                shipmentDate: parsedData.shipmentDate,
+                deliveryDate: parsedData.deliveryDate
+            },
+            status: 'received',
+            source: 'manual',
+            receivedAt: new Date()
+        });
+
+        await ediDoc.save();
 
         res.json({
             success: true,
-            message: 'EDI 210 file generated successfully',
-            fileName: fileName,
-            filePath: filePath,
-            ediContent: ediContent
+            message: 'EDI 210 document created successfully',
+            ediDocument: {
+                id: ediDoc._id,
+                controlNumber: ediDoc.controlNumber,
+                invoiceNumber: ediDoc.parsedData.invoiceNumber,
+                status: ediDoc.status,
+                receivedAt: ediDoc.receivedAt
+            }
         });
     } catch (error) {
         console.error('Error generating EDI 210:', error);
@@ -46,387 +72,8 @@ router.post('/generate', async (req, res) => {
 });
 
 /**
- * POST /api/edi210/generate-from-invoice/:id
- * Generate EDI 210 from existing invoice in database
- */
-router.post('/generate-from-invoice/:id', async (req, res) => {
-    try {
-        const invoice = await Invoice.findById(req.params.id);
-
-        if (!invoice) {
-            return res.status(404).json({
-                success: false,
-                error: 'Invoice not found'
-            });
-        }
-
-        // Map invoice to EDI format
-        const invoiceData = {
-            invoiceNumber: invoice.invoiceNumber,
-            shipmentId: invoice.shipment.trackingNumber,
-            invoiceDate: invoice.invoiceDate,
-            shipmentDate: invoice.shipment.pickupDate,
-            deliveryDate: invoice.shipment.deliveryDate,
-            netAmount: invoice.amount.baseRate + invoice.amount.fuelSurcharge + invoice.amount.accessorialCharges,
-            referenceNumber: invoice.shipment.referenceNumber,
-            proNumber: invoice.shipment.proNumber,
-            shipper: {
-                name: invoice.shipper.name,
-                address: {
-                    street: invoice.shipper.address.street,
-                    city: invoice.shipper.address.city,
-                    state: invoice.shipper.address.state,
-                    zip: invoice.shipper.address.zip
-                }
-            },
-            consignee: {
-                name: invoice.consignee.name,
-                address: {
-                    street: invoice.consignee.address.street,
-                    city: invoice.consignee.address.city,
-                    state: invoice.consignee.address.state,
-                    zip: invoice.consignee.address.zip
-                }
-            },
-            billTo: {
-                name: invoice.customer.name,
-                address: {
-                    street: invoice.customer.address.street,
-                    city: invoice.customer.address.city,
-                    state: invoice.customer.address.state,
-                    zip: invoice.customer.address.zip
-                }
-            },
-            shipment: {
-                weight: invoice.shipment.weight
-            },
-            amount: {
-                baseRate: invoice.amount.baseRate,
-                total: invoice.amount.baseRate + invoice.amount.fuelSurcharge + invoice.amount.accessorialCharges
-            },
-            lineItems: [{
-                description: `${invoice.shipment.equipmentType} Freight`,
-                commodityCode: 'FAK',
-                quantity: 1,
-                weight: invoice.shipment.weight,
-                chargeAmount: invoice.amount.baseRate + invoice.amount.fuelSurcharge + invoice.amount.accessorialCharges,
-                rateAmount: invoice.amount.baseRate
-            }]
-        };
-
-        const generator = new EDI210Generator();
-        const ediContent = generator.generate(invoiceData);
-
-        const fileName = `EDI210_${invoice.invoiceNumber}_${Date.now()}.edi`;
-        const filePath = await generator.saveToFile(ediContent, fileName);
-
-        res.json({
-            success: true,
-            message: 'EDI 210 file generated from invoice',
-            invoiceId: invoice._id,
-            invoiceNumber: invoice.invoiceNumber,
-            fileName: fileName,
-            filePath: filePath,
-            ediContent: ediContent
-        });
-    } catch (error) {
-        console.error('Error generating EDI 210 from invoice:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-/**
- * POST /api/edi210/process
- * Process EDI 210 file and create invoice
- */
-router.post('/process', async (req, res) => {
-    try {
-        const { fileName, ediContent } = req.body;
-
-        if (!ediContent) {
-            return res.status(400).json({
-                success: false,
-                error: 'EDI content is required'
-            });
-        }
-
-        const generator = new EDI210Generator();
-        const parsedData = generator.parse(ediContent);
-
-        // Create invoice from parsed EDI data
-        const invoice = new Invoice({
-            invoiceNumber: parsedData.invoiceNumber || `INV-${Date.now()}`,
-            invoiceDate: parsedData.invoiceDate || new Date(),
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-            status: 'pending',
-            carrier: {
-                name: 'EDI Import Carrier',
-                scac: 'EDIC',
-                dot: '0000000'
-            },
-            customer: {
-                name: parsedData.billTo?.name || 'EDI Customer',
-                customerId: 'EDI-CUST',
-                address: {
-                    street: parsedData.billTo?.address?.street || '',
-                    city: parsedData.billTo?.address?.city || '',
-                    state: parsedData.billTo?.address?.state || '',
-                    zip: parsedData.billTo?.address?.zip || ''
-                }
-            },
-            shipment: {
-                trackingNumber: parsedData.shipmentId || `TRK-${Date.now()}`,
-                referenceNumber: parsedData.referenceNumber || '',
-                proNumber: parsedData.shipmentId || '',
-                pickupDate: parsedData.shipmentDate || new Date(),
-                deliveryDate: parsedData.deliveryDate || new Date(),
-                equipmentType: 'Van',
-                weight: parsedData.shipment?.weight || 0,
-                pieces: parsedData.lineItems?.[0]?.quantity || 1
-            },
-            shipper: {
-                name: parsedData.shipper?.name || 'EDI Shipper',
-                address: {
-                    street: parsedData.shipper?.address?.street || '',
-                    city: parsedData.shipper?.address?.city || '',
-                    state: parsedData.shipper?.address?.state || '',
-                    zip: parsedData.shipper?.address?.zip || ''
-                }
-            },
-            consignee: {
-                name: parsedData.consignee?.name || 'EDI Consignee',
-                address: {
-                    street: parsedData.consignee?.address?.street || '',
-                    city: parsedData.consignee?.address?.city || '',
-                    state: parsedData.consignee?.address?.state || '',
-                    zip: parsedData.consignee?.address?.zip || ''
-                }
-            },
-            amount: {
-                baseRate: parsedData.amount?.baseRate || parsedData.netAmount || 0,
-                fuelSurcharge: 0,
-                accessorialCharges: 0,
-                tax: 0,
-                discount: 0
-            },
-            notes: `Generated from EDI 210 file${fileName ? `: ${fileName}` : ''}`
-        });
-
-        await invoice.save();
-
-        res.json({
-            success: true,
-            message: 'Invoice created from EDI 210 file',
-            invoice: invoice,
-            invoiceId: invoice._id,
-            invoiceNumber: invoice.invoiceNumber
-        });
-    } catch (error) {
-        console.error('Error processing EDI 210:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-/**
- * GET /api/edi210/files
- * List all EDI 210 files
- */
-router.get('/files', async (req, res) => {
-    try {
-        // Azure App Service: /home/site/wwwroot is read-only
-        // Use /home/edi_files for writable persistent storage
-        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
-
-        // Create directory if it doesn't exist
-        try {
-            await fs.mkdir(ediDir, { recursive: true });
-        } catch (error) {
-            // If mkdir fails, check if directory exists
-            try {
-                await fs.access(ediDir);
-            } catch (accessError) {
-                // Directory doesn't exist and can't be created
-                return res.json({
-                    success: true,
-                    files: [],
-                    count: 0,
-                    message: 'EDI directory will be created on first file generation'
-                });
-            }
-        }
-
-        let files;
-        try {
-            files = await fs.readdir(ediDir);
-        } catch (error) {
-            // Directory doesn't exist yet
-            return res.json({
-                success: true,
-                files: [],
-                count: 0
-            });
-        }
-
-        const ediFiles = files.filter(file => file.endsWith('.edi'));
-
-        const fileDetails = await Promise.all(
-            ediFiles.map(async (file) => {
-                const filePath = path.join(ediDir, file);
-                const stats = await fs.stat(filePath);
-                return {
-                    fileName: file,
-                    filePath: filePath,
-                    size: stats.size,
-                    created: stats.birthtime,
-                    modified: stats.mtime
-                };
-            })
-        );
-
-        res.json({
-            success: true,
-            files: fileDetails,
-            count: fileDetails.length
-        });
-    } catch (error) {
-        console.error('Error listing EDI files:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-/**
- * GET /api/edi210/files/:fileName
- * Get specific EDI 210 file content
- */
-router.get('/files/:fileName', async (req, res) => {
-    try {
-        // Azure App Service: /home/site/wwwroot is read-only
-        // Use /home/edi_files for writable persistent storage
-        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
-        const filePath = path.join(ediDir, req.params.fileName);
-
-        const content = await fs.readFile(filePath, 'utf8');
-
-        res.json({
-            success: true,
-            fileName: req.params.fileName,
-            content: content
-        });
-    } catch (error) {
-        console.error('Error reading EDI file:', error);
-        res.status(404).json({
-            success: false,
-            error: 'File not found'
-        });
-    }
-});
-
-/**
- * POST /api/edi210/process-file/:fileName
- * Process a specific EDI file by filename
- */
-router.post('/process-file/:fileName', async (req, res) => {
-    try {
-        // Azure App Service: /home/site/wwwroot is read-only
-        // Use /home/edi_files for writable persistent storage
-        const ediDir = process.env.EDI_FILES_PATH || path.join('/home', 'edi_files');
-        const filePath = path.join(ediDir, req.params.fileName);
-
-        const ediContent = await fs.readFile(filePath, 'utf8');
-
-        // Process using the existing process endpoint logic
-        const generator = new EDI210Generator();
-        const parsedData = generator.parse(ediContent);
-
-        const invoice = new Invoice({
-            invoiceNumber: parsedData.invoiceNumber || `INV-${Date.now()}`,
-            invoiceDate: parsedData.invoiceDate || new Date(),
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            status: 'pending',
-            carrier: {
-                name: 'EDI Import Carrier',
-                scac: 'EDIC',
-                dot: '0000000'
-            },
-            customer: {
-                name: parsedData.billTo?.name || 'EDI Customer',
-                customerId: 'EDI-CUST',
-                address: {
-                    street: parsedData.billTo?.address?.street || '',
-                    city: parsedData.billTo?.address?.city || '',
-                    state: parsedData.billTo?.address?.state || '',
-                    zip: parsedData.billTo?.address?.zip || ''
-                }
-            },
-            shipment: {
-                trackingNumber: parsedData.shipmentId || `TRK-${Date.now()}`,
-                referenceNumber: parsedData.referenceNumber || '',
-                proNumber: parsedData.shipmentId || '',
-                pickupDate: parsedData.shipmentDate || new Date(),
-                deliveryDate: parsedData.deliveryDate || new Date(),
-                equipmentType: 'Van',
-                weight: parsedData.shipment?.weight || 0,
-                pieces: parsedData.lineItems?.[0]?.quantity || 1
-            },
-            shipper: {
-                name: parsedData.shipper?.name || 'EDI Shipper',
-                address: {
-                    street: parsedData.shipper?.address?.street || '',
-                    city: parsedData.shipper?.address?.city || '',
-                    state: parsedData.shipper?.address?.state || '',
-                    zip: parsedData.shipper?.address?.zip || ''
-                }
-            },
-            consignee: {
-                name: parsedData.consignee?.name || 'EDI Consignee',
-                address: {
-                    street: parsedData.consignee?.address?.street || '',
-                    city: parsedData.consignee?.address?.city || '',
-                    state: parsedData.consignee?.address?.state || '',
-                    zip: parsedData.consignee?.address?.zip || ''
-                }
-            },
-            amount: {
-                baseRate: parsedData.amount?.baseRate || parsedData.netAmount || 0,
-                fuelSurcharge: 0,
-                accessorialCharges: 0,
-                tax: 0,
-                discount: 0
-            },
-            notes: `Generated from EDI 210 file: ${req.params.fileName}`
-        });
-
-        await invoice.save();
-
-        res.json({
-            success: true,
-            message: 'Invoice created from EDI 210 file',
-            fileName: req.params.fileName,
-            invoice: invoice,
-            invoiceId: invoice._id,
-            invoiceNumber: invoice.invoiceNumber
-        });
-    } catch (error) {
-        console.error('Error processing EDI file:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-/**
  * POST /api/edi210/generate-with-claude
- * Generate EDI 210 files using Claude API for realistic freight data
+ * Generate EDI 210 documents using Claude API with optional error injection
  */
 router.post('/generate-with-claude', async (req, res) => {
     try {
@@ -455,12 +102,7 @@ router.post('/generate-with-claude', async (req, res) => {
             });
         }
 
-        const anthropic = new Anthropic({
-            apiKey: apiKey
-        });
-
-        // Get model from environment variable or use fallback
-        // Default to Claude 3 Opus which is more widely available
+        const anthropic = new Anthropic({ apiKey: apiKey });
         const model = process.env.CLAUDE_MODEL || 'claude-3-opus-20240229';
         console.log(`Using Claude model: ${model}`);
 
@@ -516,16 +158,11 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
         const message = await anthropic.messages.create({
             model: model,
             max_tokens: 4096,
-            messages: [{
-                role: 'user',
-                content: prompt
-            }]
+            messages: [{ role: 'user', content: prompt }]
         });
 
         // Extract JSON from Claude's response
         let responseText = message.content[0].text;
-
-        // Try to extract JSON if it's wrapped in markdown code blocks
         const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
                          responseText.match(/```\s*([\s\S]*?)\s*```/);
         if (jsonMatch) {
@@ -533,82 +170,378 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
         }
 
         const shipmentData = JSON.parse(responseText);
-
         if (!Array.isArray(shipmentData)) {
             throw new Error('Invalid response format from Claude API');
         }
 
-        // Generate EDI 210 files for each shipment
+        // Generate EDI documents with 10-30% error rate
         const generator = new EDI210Generator();
-        const generatedFiles = [];
+        const generatedDocs = [];
+        const errorRate = 0.1 + Math.random() * 0.2; // 10-30%
 
         for (const shipment of shipmentData) {
-            const ediData = {
-                invoiceNumber: shipment.invoiceNumber,
-                shipmentId: shipment.shipmentId,
+            const shouldHaveError = Math.random() < errorRate;
+            let ediData = { ...shipment };
+
+            // Inject intentional errors for testing
+            if (shouldHaveError) {
+                const errorTypes = ['missing_weight', 'missing_amount', 'missing_billto', 'invalid_weight', 'invalid_amount'];
+                const errorType = errorTypes[Math.floor(Math.random() * errorTypes.length)];
+
+                switch (errorType) {
+                    case 'missing_weight':
+                        delete ediData.weight;
+                        break;
+                    case 'missing_amount':
+                        delete ediData.amount;
+                        break;
+                    case 'missing_billto':
+                        delete ediData.billToName;
+                        break;
+                    case 'invalid_weight':
+                        ediData.weight = -100;
+                        break;
+                    case 'invalid_amount':
+                        ediData.amount = 0;
+                        break;
+                }
+            }
+
+            // Generate EDI content
+            const fullEdiData = {
+                invoiceNumber: ediData.invoiceNumber,
+                shipmentId: ediData.shipmentId,
                 invoiceDate: new Date(),
-                netAmount: shipment.amount,
+                netAmount: ediData.amount,
                 shipper: {
-                    name: shipment.shipperName,
+                    name: ediData.shipperName,
                     address: {
-                        street: shipment.shipperAddress,
-                        city: shipment.shipperCity,
-                        state: shipment.shipperState,
-                        zip: shipment.shipperZip
+                        street: ediData.shipperAddress,
+                        city: ediData.shipperCity,
+                        state: ediData.shipperState,
+                        zip: ediData.shipperZip
                     }
                 },
                 consignee: {
-                    name: shipment.consigneeName,
+                    name: ediData.consigneeName,
                     address: {
-                        street: shipment.consigneeAddress,
-                        city: shipment.consigneeCity,
-                        state: shipment.consigneeState,
-                        zip: shipment.consigneeZip
+                        street: ediData.consigneeAddress,
+                        city: ediData.consigneeCity,
+                        state: ediData.consigneeState,
+                        zip: ediData.consigneeZip
                     }
                 },
                 billTo: {
-                    name: shipment.billToName,
+                    name: ediData.billToName,
                     address: {
-                        street: shipment.shipperAddress,
-                        city: shipment.shipperCity,
-                        state: shipment.shipperState,
-                        zip: shipment.shipperZip
+                        street: ediData.shipperAddress,
+                        city: ediData.shipperCity,
+                        state: ediData.shipperState,
+                        zip: ediData.shipperZip
                     }
                 },
                 shipment: {
-                    weight: shipment.weight
+                    weight: ediData.weight
                 },
                 amount: {
-                    baseRate: shipment.amount,
-                    total: shipment.amount
+                    baseRate: ediData.amount,
+                    total: ediData.amount
                 }
             };
 
-            const ediContent = generator.generate(ediData);
-            const fileName = `EDI210_${shipment.invoiceNumber}_${Date.now()}.edi`;
-            const filePath = await generator.saveToFile(ediContent, fileName);
+            const ediContent = generator.generate(fullEdiData);
+            const parsedData = generator.parse(ediContent);
 
-            generatedFiles.push({
-                fileName: fileName,
-                invoiceNumber: shipment.invoiceNumber,
-                shipmentId: shipment.shipmentId,
-                shipper: shipment.shipperName,
-                consignee: shipment.consigneeName,
-                weight: shipment.weight,
-                amount: shipment.amount
+            // Save to database
+            const ediDoc = new EDIDocument({
+                ediType: '210',
+                controlNumber: generator.generateControlNumber(),
+                ediContent: ediContent,
+                parsedData: {
+                    invoiceNumber: parsedData.invoiceNumber,
+                    shipmentId: parsedData.shipmentId,
+                    shipperName: parsedData.shipper?.name,
+                    consigneeName: parsedData.consignee?.name,
+                    billToName: parsedData.billTo?.name,
+                    weight: parsedData.shipment?.weight,
+                    amount: parsedData.netAmount || parsedData.amount?.total,
+                    shipmentDate: parsedData.shipmentDate,
+                    deliveryDate: parsedData.deliveryDate
+                },
+                status: 'received',
+                source: 'claude_ai',
+                sourceMetadata: {
+                    shipmentType: shipmentType,
+                    model: model,
+                    intentionalError: shouldHaveError
+                },
+                receivedAt: new Date()
+            });
+
+            await ediDoc.save();
+
+            generatedDocs.push({
+                id: ediDoc._id,
+                controlNumber: ediDoc.controlNumber,
+                invoiceNumber: ediDoc.parsedData.invoiceNumber,
+                shipmentId: ediDoc.parsedData.shipmentId,
+                shipper: ediDoc.parsedData.shipperName,
+                consignee: ediDoc.parsedData.consigneeName,
+                weight: ediDoc.parsedData.weight,
+                amount: ediDoc.parsedData.amount,
+                hasIntentionalError: shouldHaveError,
+                status: ediDoc.status
             });
         }
 
         res.json({
             success: true,
-            message: `Generated ${generatedFiles.length} EDI 210 files using Claude API`,
+            message: `Generated ${generatedDocs.length} EDI 210 documents using Claude API`,
             shipmentType: shipmentType,
-            files: generatedFiles,
-            count: generatedFiles.length
+            documents: generatedDocs,
+            count: generatedDocs.length,
+            errorRate: Math.round(errorRate * 100)
         });
 
     } catch (error) {
         console.error('Error generating EDI with Claude:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/edi210/documents
+ * List EDI documents with paging, sorting, and filtering
+ */
+router.get('/documents', async (req, res) => {
+    try {
+        // Parse query parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const status = req.query.status; // Filter by status
+        const source = req.query.source; // Filter by source
+        const sortBy = req.query.sortBy || 'receivedAt';
+        const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+        // Build filter
+        const filter = {};
+        if (status) filter.status = status;
+        if (source) filter.source = source;
+
+        // Calculate skip
+        const skip = (page - 1) * limit;
+
+        // Build sort object
+        const sort = {};
+        sort[sortBy] = sortOrder;
+
+        // Query database
+        const [documents, total] = await Promise.all([
+            EDIDocument.find(filter)
+                .sort(sort)
+                .skip(skip)
+                .limit(limit)
+                .select('-ediContent') // Exclude large content field from list
+                .lean(),
+            EDIDocument.countDocuments(filter)
+        ]);
+
+        // Get statistics
+        const stats = await EDIDocument.getStatistics();
+
+        res.json({
+            success: true,
+            data: documents,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit),
+                hasNext: page * limit < total,
+                hasPrev: page > 1
+            },
+            statistics: stats,
+            filter: { status, source }
+        });
+    } catch (error) {
+        console.error('Error listing EDI documents:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/edi210/documents/:id
+ * Get specific EDI document with full content
+ */
+router.get('/documents/:id', async (req, res) => {
+    try {
+        const doc = await EDIDocument.findById(req.params.id)
+            .populate('createdInvoiceId');
+
+        if (!doc) {
+            return res.status(404).json({
+                success: false,
+                error: 'EDI document not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            document: doc
+        });
+    } catch (error) {
+        console.error('Error fetching EDI document:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/edi210/process/:id
+ * Process an EDI document and create invoice
+ */
+router.post('/process/:id', async (req, res) => {
+    try {
+        const doc = await EDIDocument.findById(req.params.id);
+
+        if (!doc) {
+            return res.status(404).json({
+                success: false,
+                error: 'EDI document not found'
+            });
+        }
+
+        if (doc.status === 'processed_success') {
+            return res.status(400).json({
+                success: false,
+                error: 'This EDI document has already been processed successfully'
+            });
+        }
+
+        // Update status to processing
+        doc.status = 'processing';
+        await doc.save();
+
+        // Validate before processing
+        const validation = doc.validateForProcessing();
+        if (!validation.valid) {
+            doc.status = 'validation_error';
+            doc.validationErrors = validation.errors;
+            await doc.save();
+
+            return res.status(400).json({
+                success: false,
+                error: 'Validation failed',
+                validationErrors: validation.errors
+            });
+        }
+
+        // Parse EDI content
+        const generator = new EDI210Generator();
+        const parsedData = generator.parse(doc.ediContent);
+
+        // Create invoice with all required fields
+        const invoice = new Invoice({
+            invoiceNumber: parsedData.invoiceNumber || `INV-${Date.now()}`,
+            invoiceDate: parsedData.invoiceDate || new Date(),
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+            status: 'draft', // Valid status: draft, sent, viewed, partially_paid, paid, overdue, cancelled
+            carrier: {
+                name: 'EDI Import Carrier',
+                scac: 'EDIC'
+            },
+            customer: {
+                name: parsedData.billTo?.name || 'EDI Customer',
+                email: 'edi@example.com', // Required field - using placeholder
+                company: parsedData.billTo?.name || 'EDI Customer'
+            },
+            shipment: {
+                trackingNumber: parsedData.shipmentId || `TRK-${Date.now()}`,
+                origin: {
+                    city: parsedData.shipper?.address?.city || '',
+                    state: parsedData.shipper?.address?.state || '',
+                    zip: parsedData.shipper?.address?.zip || ''
+                },
+                destination: {
+                    city: parsedData.consignee?.address?.city || '',
+                    state: parsedData.consignee?.address?.state || '',
+                    zip: parsedData.consignee?.address?.zip || ''
+                },
+                weight: parsedData.shipment?.weight || 0,
+                weightUnit: 'lbs'
+            },
+            amount: {
+                baseRate: parsedData.amount?.baseRate || parsedData.netAmount || 0,
+                fuelSurcharge: 0,
+                accessorialCharges: 0,
+                tax: 0,
+                discount: 0
+            },
+            terms: 'Net 30',
+            notes: `Generated from EDI 210 document (ID: ${doc._id})`
+        });
+
+        await invoice.save();
+
+        // Mark EDI document as processed
+        await doc.markProcessed(true, invoice._id);
+
+        res.json({
+            success: true,
+            message: 'Invoice created from EDI 210 document',
+            ediDocument: {
+                id: doc._id,
+                status: doc.status,
+                processedAt: doc.processedAt
+            },
+            invoice: {
+                id: invoice._id,
+                invoiceNumber: invoice.invoiceNumber,
+                totalAmount: invoice.totalAmount
+            }
+        });
+    } catch (error) {
+        console.error('Error processing EDI document:', error);
+
+        // Update EDI document with error
+        try {
+            const doc = await EDIDocument.findById(req.params.id);
+            if (doc) {
+                await doc.markProcessed(false, null, error);
+            }
+        } catch (updateError) {
+            console.error('Error updating EDI document status:', updateError);
+        }
+
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/edi210/statistics
+ * Get EDI document statistics
+ */
+router.get('/statistics', async (req, res) => {
+    try {
+        const stats = await EDIDocument.getStatistics();
+
+        res.json({
+            success: true,
+            statistics: stats
+        });
+    } catch (error) {
+        console.error('Error fetching statistics:', error);
         res.status(500).json({
             success: false,
             error: error.message
