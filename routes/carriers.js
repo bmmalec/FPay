@@ -474,4 +474,123 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Add a note to a carrier
+router.post('/:id/notes', async (req, res) => {
+    try {
+        const { content, createdBy, category, pinned } = req.body;
+
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                error: 'Note content is required'
+            });
+        }
+
+        const carrier = await Carrier.findById(req.params.id);
+
+        if (!carrier) {
+            return res.status(404).json({
+                success: false,
+                error: 'Carrier not found'
+            });
+        }
+
+        carrier.addNote(content, createdBy || 'Admin', category || 'general', pinned || false);
+        await carrier.save();
+
+        res.json({
+            success: true,
+            message: 'Note added successfully',
+            data: carrier.notes[carrier.notes.length - 1]
+        });
+    } catch (error) {
+        console.error('Error adding note:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add note',
+            message: error.message
+        });
+    }
+});
+
+// Get notes for a carrier
+router.get('/:id/notes', async (req, res) => {
+    try {
+        const carrier = await Carrier.findById(req.params.id).select('notes companyName mcNumber');
+
+        if (!carrier) {
+            return res.status(404).json({
+                success: false,
+                error: 'Carrier not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                companyName: carrier.companyName,
+                mcNumber: carrier.mcNumber,
+                notes: carrier.notes.sort((a, b) => b.createdAt - a.createdAt)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching notes:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch notes',
+            message: error.message
+        });
+    }
+});
+
+// Get audit trail for a carrier
+router.get('/:id/audit-trail', async (req, res) => {
+    try {
+        const carrier = await Carrier.findById(req.params.id).select('auditTrail companyName mcNumber');
+
+        if (!carrier) {
+            return res.status(404).json({
+                success: false,
+                error: 'Carrier not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                companyName: carrier.companyName,
+                mcNumber: carrier.mcNumber,
+                auditTrail: carrier.auditTrail.sort((a, b) => b.timestamp - a.timestamp)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching audit trail:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audit trail',
+            message: error.message
+        });
+    }
+});
+
+// Get recent activity across all carriers
+router.get('/activity/recent', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const activity = await Carrier.getRecentActivity(limit);
+
+        res.json({
+            success: true,
+            data: activity
+        });
+    } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch recent activity',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

@@ -159,8 +159,58 @@ const carrierSchema = new mongoose.Schema({
         }
     },
 
-    // Notes and Metadata
-    notes: String,
+    // Notes/Journaling System
+    notes: [{
+        content: {
+            type: String,
+            required: true
+        },
+        createdBy: {
+            type: String,
+            default: 'System'
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        category: {
+            type: String,
+            enum: ['general', 'onboarding', 'performance', 'compliance', 'insurance', 'internal'],
+            default: 'general'
+        },
+        pinned: {
+            type: Boolean,
+            default: false
+        }
+    }],
+
+    // Audit Trail
+    auditTrail: [{
+        action: {
+            type: String,
+            required: true,
+            enum: ['created', 'updated', 'status_changed', 'approved', 'suspended', 'reactivated', 'insurance_updated', 'note_added']
+        },
+        performedBy: {
+            type: String,
+            default: 'System'
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        changes: {
+            type: Map,
+            of: mongoose.Schema.Types.Mixed
+        },
+        metadata: {
+            type: Map,
+            of: String
+        },
+        ipAddress: String,
+        userAgent: String
+    }],
+
     tags: [String],
 
     // AI Generation Metadata
@@ -189,6 +239,60 @@ carrierSchema.virtual('fullAddress').get(function() {
     return addr;
 });
 
+// Method to add a note
+carrierSchema.methods.addNote = function(content, createdBy = 'System', category = 'general', pinned = false) {
+    this.notes.push({
+        content,
+        createdBy,
+        createdAt: new Date(),
+        category,
+        pinned
+    });
+
+    // Add audit trail entry
+    this.addAuditEntry('note_added', createdBy, {
+        noteContent: content,
+        category: category
+    });
+
+    return this;
+};
+
+// Method to add audit trail entry
+carrierSchema.methods.addAuditEntry = function(action, performedBy = 'System', changes = {}, metadata = {}, ipAddress = null, userAgent = null) {
+    this.auditTrail.push({
+        action,
+        performedBy,
+        timestamp: new Date(),
+        changes: new Map(Object.entries(changes)),
+        metadata: new Map(Object.entries(metadata)),
+        ipAddress,
+        userAgent
+    });
+
+    return this;
+};
+
+// Method to log status change
+carrierSchema.methods.changeStatus = function(newStatus, performedBy = 'System', reason = null) {
+    const oldStatus = this.status;
+    this.status = newStatus;
+
+    const changes = {
+        field: 'status',
+        oldValue: oldStatus,
+        newValue: newStatus
+    };
+
+    if (reason) {
+        changes.reason = reason;
+    }
+
+    this.addAuditEntry('status_changed', performedBy, changes);
+
+    return this;
+};
+
 // Method to check if insurance is valid
 carrierSchema.methods.hasValidInsurance = function() {
     const now = new Date();
@@ -199,10 +303,13 @@ carrierSchema.methods.hasValidInsurance = function() {
 
 // Method to approve carrier
 carrierSchema.methods.approve = function(approvedByUserId) {
-    this.status = 'active';
+    this.changeStatus('active', approvedByUserId || 'System', 'Carrier approved');
     this.approvedBy = approvedByUserId;
     this.approvedAt = new Date();
     this.onboardingComplete = true;
+    this.addAuditEntry('approved', approvedByUserId || 'System', {
+        approvedAt: this.approvedAt
+    });
     return this.save();
 };
 
@@ -239,6 +346,16 @@ carrierSchema.statics.getStatistics = async function() {
     });
 
     return result;
+};
+
+// Static method to get recent activity
+carrierSchema.statics.getRecentActivity = async function(limit = 10) {
+    const carriers = await this.find()
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .select('companyName status auditTrail mcNumber dotNumber updatedAt');
+
+    return carriers;
 };
 
 const Carrier = mongoose.model('Carrier', carrierSchema);

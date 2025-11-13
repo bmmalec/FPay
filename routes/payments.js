@@ -190,4 +190,123 @@ router.get('/stats/summary', async (req, res) => {
     }
 });
 
+// Add a note to a payment
+router.post('/:id/notes', async (req, res) => {
+    try {
+        const { content, createdBy, category, pinned } = req.body;
+
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                error: 'Note content is required'
+            });
+        }
+
+        const payment = await Payment.findById(req.params.id);
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                error: 'Payment not found'
+            });
+        }
+
+        payment.addNote(content, createdBy || 'Admin', category || 'general', pinned || false);
+        await payment.save();
+
+        res.json({
+            success: true,
+            message: 'Note added successfully',
+            data: payment.notes[payment.notes.length - 1]
+        });
+    } catch (error) {
+        console.error('Error adding note:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add note',
+            message: error.message
+        });
+    }
+});
+
+// Get notes for a payment
+router.get('/:id/notes', async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id).select('notes transactionId amount');
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                error: 'Payment not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                transactionId: payment.transactionId,
+                amount: payment.amount,
+                notes: payment.notes.sort((a, b) => b.createdAt - a.createdAt)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching notes:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch notes',
+            message: error.message
+        });
+    }
+});
+
+// Get audit trail for a payment
+router.get('/:id/audit-trail', async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id).select('auditTrail transactionId amount');
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                error: 'Payment not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                transactionId: payment.transactionId,
+                amount: payment.amount,
+                auditTrail: payment.auditTrail.sort((a, b) => b.timestamp - a.timestamp)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching audit trail:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audit trail',
+            message: error.message
+        });
+    }
+});
+
+// Get recent activity across all payments
+router.get('/activity/recent', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const activity = await Payment.getRecentActivity(limit);
+
+        res.json({
+            success: true,
+            data: activity
+        });
+    } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch recent activity',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

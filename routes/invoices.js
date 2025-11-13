@@ -268,4 +268,121 @@ router.get('/stats/summary', async (req, res) => {
     }
 });
 
+// Add a note to an invoice
+router.post('/:id/notes', async (req, res) => {
+    try {
+        const { content, createdBy, category, pinned } = req.body;
+
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                error: 'Note content is required'
+            });
+        }
+
+        const invoice = await Invoice.findById(req.params.id);
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: 'Invoice not found'
+            });
+        }
+
+        invoice.addNote(content, createdBy || 'Admin', category || 'general', pinned || false);
+        await invoice.save();
+
+        res.json({
+            success: true,
+            message: 'Note added successfully',
+            data: invoice.notes[invoice.notes.length - 1]
+        });
+    } catch (error) {
+        console.error('Error adding note:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add note',
+            message: error.message
+        });
+    }
+});
+
+// Get notes for an invoice
+router.get('/:id/notes', async (req, res) => {
+    try {
+        const invoice = await Invoice.findById(req.params.id).select('notes invoiceNumber');
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: 'Invoice not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                invoiceNumber: invoice.invoiceNumber,
+                notes: invoice.notes.sort((a, b) => b.createdAt - a.createdAt)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching notes:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch notes',
+            message: error.message
+        });
+    }
+});
+
+// Get audit trail for an invoice
+router.get('/:id/audit-trail', async (req, res) => {
+    try {
+        const invoice = await Invoice.findById(req.params.id).select('auditTrail invoiceNumber');
+
+        if (!invoice) {
+            return res.status(404).json({
+                success: false,
+                error: 'Invoice not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                invoiceNumber: invoice.invoiceNumber,
+                auditTrail: invoice.auditTrail.sort((a, b) => b.timestamp - a.timestamp)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching audit trail:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch audit trail',
+            message: error.message
+        });
+    }
+});
+
+// Get recent activity across all invoices
+router.get('/activity/recent', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const activity = await Invoice.getRecentActivity(limit);
+
+        res.json({
+            success: true,
+            data: activity
+        });
+    } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch recent activity',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;

@@ -99,7 +99,59 @@ const invoiceSchema = new mongoose.Schema({
         type: String,
         default: 'Net 30'
     },
-    notes: String,
+
+    // Notes/Journaling System
+    notes: [{
+        content: {
+            type: String,
+            required: true
+        },
+        createdBy: {
+            type: String,
+            default: 'System'
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        category: {
+            type: String,
+            enum: ['general', 'payment', 'dispute', 'follow-up', 'internal'],
+            default: 'general'
+        },
+        pinned: {
+            type: Boolean,
+            default: false
+        }
+    }],
+
+    // Audit Trail
+    auditTrail: [{
+        action: {
+            type: String,
+            required: true,
+            enum: ['created', 'updated', 'status_changed', 'sent', 'viewed', 'payment_received', 'cancelled', 'note_added']
+        },
+        performedBy: {
+            type: String,
+            default: 'System'
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        changes: {
+            type: Map,
+            of: mongoose.Schema.Types.Mixed
+        },
+        metadata: {
+            type: Map,
+            of: String
+        },
+        ipAddress: String,
+        userAgent: String
+    }],
+
     metadata: {
         type: Map,
         of: String
@@ -136,6 +188,70 @@ invoiceSchema.virtual('amountDue').get(function() {
 // Method to check if invoice is overdue
 invoiceSchema.methods.isOverdue = function() {
     return this.status !== 'paid' && this.dueDate < new Date();
+};
+
+// Method to add a note
+invoiceSchema.methods.addNote = function(content, createdBy = 'System', category = 'general', pinned = false) {
+    this.notes.push({
+        content,
+        createdBy,
+        createdAt: new Date(),
+        category,
+        pinned
+    });
+
+    // Add audit trail entry
+    this.addAuditEntry('note_added', createdBy, {
+        noteContent: content,
+        category: category
+    });
+
+    return this;
+};
+
+// Method to add audit trail entry
+invoiceSchema.methods.addAuditEntry = function(action, performedBy = 'System', changes = {}, metadata = {}, ipAddress = null, userAgent = null) {
+    this.auditTrail.push({
+        action,
+        performedBy,
+        timestamp: new Date(),
+        changes: new Map(Object.entries(changes)),
+        metadata: new Map(Object.entries(metadata)),
+        ipAddress,
+        userAgent
+    });
+
+    return this;
+};
+
+// Method to log status change
+invoiceSchema.methods.changeStatus = function(newStatus, performedBy = 'System', reason = null) {
+    const oldStatus = this.status;
+    this.status = newStatus;
+
+    const changes = {
+        field: 'status',
+        oldValue: oldStatus,
+        newValue: newStatus
+    };
+
+    if (reason) {
+        changes.reason = reason;
+    }
+
+    this.addAuditEntry('status_changed', performedBy, changes);
+
+    return this;
+};
+
+// Static method to get recent activity
+invoiceSchema.statics.getRecentActivity = async function(limit = 10) {
+    const invoices = await this.find()
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .select('invoiceNumber status auditTrail customer.name totalAmount updatedAt');
+
+    return invoices;
 };
 
 // Ensure virtuals are included in JSON
