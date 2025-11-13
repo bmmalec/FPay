@@ -4,10 +4,20 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Create edi_files directory on startup if it doesn't exist
+const ediDir = path.join(__dirname, 'edi_files');
+if (!fs.existsSync(ediDir)) {
+    fs.mkdirSync(ediDir, { recursive: true });
+    console.log('✅ Created edi_files directory');
+} else {
+    console.log('✅ edi_files directory exists');
+}
 
 // Middleware
 app.use(helmet({

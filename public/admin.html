@@ -451,6 +451,41 @@
                 <p style="margin-top: 10px; opacity: 0.95;">Generate and process EDI 210 Motor Carrier Freight Details and Invoice files</p>
             </div>
 
+            <div class="form-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;">🤖 AI-Powered EDI Generation with Claude</h3>
+                <p style="margin-bottom: 20px; opacity: 0.95;">Let Claude AI generate realistic freight shipment data and create EDI 210 files automatically</p>
+                <form id="claudeEDIForm" onsubmit="generateEDIWithClaude(event)" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="color: white;">Shipment Type *</label>
+                            <select name="shipmentType" required style="background: white; color: #333;">
+                                <option value="">-- Select Shipment Type --</option>
+                                <option value="LTL (Less Than Truckload)">LTL (Less Than Truckload)</option>
+                                <option value="FTL (Full Truckload)">FTL (Full Truckload)</option>
+                                <option value="Refrigerated/Reefer">Refrigerated/Reefer</option>
+                                <option value="Flatbed">Flatbed</option>
+                                <option value="Intermodal">Intermodal</option>
+                                <option value="Hazmat">Hazmat</option>
+                                <option value="Expedited">Expedited</option>
+                                <option value="Parcel/Small Package">Parcel/Small Package</option>
+                                <option value="White Glove">White Glove</option>
+                                <option value="Oversize/Heavy Haul">Oversize/Heavy Haul</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="color: white;">Quantity (1-20) *</label>
+                            <input type="number" name="quantity" min="1" max="20" value="3" required style="background: white; color: #333;">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="background: #28a745; width: 100%;">
+                        🚀 Generate EDI 210 Files with Claude AI
+                    </button>
+                    <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                        💡 Claude will generate realistic company names, addresses, weights, and rates based on the selected shipment type
+                    </p>
+                </form>
+            </div>
+
             <div class="form-section">
                 <h3>📤 Generate EDI 210 Freight Bill</h3>
                 <p style="margin-bottom: 20px; color: #666;">Create an EDI 210 file from custom freight data and save it to the edi_files folder.</p>
@@ -1069,6 +1104,69 @@
             originalShowAdminPanel();
             loadEDIFiles();
         };
+
+        // Claude AI-powered EDI generation
+        async function generateEDIWithClaude(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const shipmentType = formData.get('shipmentType');
+            const quantity = parseInt(formData.get('quantity'));
+
+            if (!shipmentType || !quantity) {
+                showMessage('⚠️ Please select shipment type and quantity', 'error');
+                return;
+            }
+
+            try {
+                showMessage(`🤖 Claude is generating ${quantity} ${shipmentType} shipment(s)... This may take a moment.`, 'success');
+
+                // Disable form while processing
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '⏳ Generating with Claude AI...';
+
+                const res = await fetch('/api/edi210/generate-with-claude', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shipmentType: shipmentType,
+                        quantity: quantity
+                    })
+                });
+
+                const data = await res.json();
+
+                // Re-enable form
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+
+                if (data.success) {
+                    let fileList = data.files.map(f =>
+                        `• ${f.invoiceNumber}: ${f.shipper} → ${f.consignee} (${f.weight} lbs, $${f.amount})`
+                    ).join('\n');
+
+                    showMessage(
+                        `✅ Successfully generated ${data.count} EDI 210 file(s) for ${data.shipmentType}!\n\n${fileList}`,
+                        'success'
+                    );
+
+                    form.reset();
+                    loadEDIFiles();
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error generating EDI with Claude: ${error.message}`, 'error');
+
+                // Re-enable form on error
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🚀 Generate EDI 210 Files with Claude AI';
+            }
+        }
     </script>
 </body>
 </html>

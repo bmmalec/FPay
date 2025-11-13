@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const EDI210Generator = require('../utils/edi210Generator');
 const Invoice = require('../models/Invoice');
+const Anthropic = require('@anthropic-ai/sdk');
 
 /**
  * POST /api/edi210/generate
@@ -388,6 +389,193 @@ router.post('/process-file/:fileName', async (req, res) => {
         });
     } catch (error) {
         console.error('Error processing EDI file:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/edi210/generate-with-claude
+ * Generate EDI 210 files using Claude API for realistic freight data
+ */
+router.post('/generate-with-claude', async (req, res) => {
+    try {
+        const { shipmentType, quantity } = req.body;
+
+        if (!shipmentType || !quantity) {
+            return res.status(400).json({
+                success: false,
+                error: 'Shipment type and quantity are required'
+            });
+        }
+
+        if (quantity < 1 || quantity > 20) {
+            return res.status(400).json({
+                success: false,
+                error: 'Quantity must be between 1 and 20'
+            });
+        }
+
+        // Check if Claude API key is available
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({
+                success: false,
+                error: 'Claude API key not configured. Please set ANTHROPIC_API_KEY environment variable.'
+            });
+        }
+
+        const anthropic = new Anthropic({
+            apiKey: apiKey
+        });
+
+        // Call Claude API to generate realistic freight data
+        const prompt = `Generate ${quantity} realistic freight shipment data entries for EDI 210 Motor Carrier Freight Bills with the following specifications:
+
+Shipment Type: ${shipmentType}
+
+For each shipment, generate realistic data including:
+- Unique invoice number (format: INV-YYYYMMDD-XXX)
+- Unique shipment/PRO number (format: SHIP-XXX or PRO-XXX)
+- Shipper company name and full address (realistic US company and location)
+- Consignee company name and full address (realistic US company and location)
+- Bill-to customer name (can be same as shipper or consignee)
+- Origin city, state, ZIP
+- Destination city, state, ZIP (different from origin)
+- Weight in pounds (appropriate for ${shipmentType})
+- Total freight charges in USD (realistic for the weight and distance)
+- Current date for shipment date
+
+Make the data realistic based on the shipment type. For example:
+- LTL (Less Than Truckload): 500-10,000 lbs, shorter distances
+- FTL (Full Truckload): 20,000-45,000 lbs, longer distances
+- Refrigerated: Food/pharmaceutical companies, temperature-controlled rates
+- Flatbed: Construction materials, heavy equipment
+- Intermodal: Rail + truck combination, longer distances
+- Hazmat: Chemical companies, special handling rates
+- Expedited: High value cargo, premium rates
+- Parcel: Small packages, residential delivery
+- White Glove: High-value items, specialized handling
+
+Return ONLY a valid JSON array with this exact structure (no additional text):
+[
+  {
+    "invoiceNumber": "INV-20251113-001",
+    "shipmentId": "SHIP-001",
+    "shipperName": "ABC Manufacturing Corp",
+    "shipperAddress": "123 Industrial Way",
+    "shipperCity": "Los Angeles",
+    "shipperState": "CA",
+    "shipperZip": "90001",
+    "consigneeName": "XYZ Distribution Center",
+    "consigneeAddress": "456 Warehouse Blvd",
+    "consigneeCity": "New York",
+    "consigneeState": "NY",
+    "consigneeZip": "10001",
+    "billToName": "ABC Manufacturing Corp",
+    "weight": 5000,
+    "amount": 1250.50
+  }
+]`;
+
+        const message = await anthropic.messages.create({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 4096,
+            messages: [{
+                role: 'user',
+                content: prompt
+            }]
+        });
+
+        // Extract JSON from Claude's response
+        let responseText = message.content[0].text;
+
+        // Try to extract JSON if it's wrapped in markdown code blocks
+        const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
+                         responseText.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+            responseText = jsonMatch[1];
+        }
+
+        const shipmentData = JSON.parse(responseText);
+
+        if (!Array.isArray(shipmentData)) {
+            throw new Error('Invalid response format from Claude API');
+        }
+
+        // Generate EDI 210 files for each shipment
+        const generator = new EDI210Generator();
+        const generatedFiles = [];
+
+        for (const shipment of shipmentData) {
+            const ediData = {
+                invoiceNumber: shipment.invoiceNumber,
+                shipmentId: shipment.shipmentId,
+                invoiceDate: new Date(),
+                netAmount: shipment.amount,
+                shipper: {
+                    name: shipment.shipperName,
+                    address: {
+                        street: shipment.shipperAddress,
+                        city: shipment.shipperCity,
+                        state: shipment.shipperState,
+                        zip: shipment.shipperZip
+                    }
+                },
+                consignee: {
+                    name: shipment.consigneeName,
+                    address: {
+                        street: shipment.consigneeAddress,
+                        city: shipment.consigneeCity,
+                        state: shipment.consigneeState,
+                        zip: shipment.consigneeZip
+                    }
+                },
+                billTo: {
+                    name: shipment.billToName,
+                    address: {
+                        street: shipment.shipperAddress,
+                        city: shipment.shipperCity,
+                        state: shipment.shipperState,
+                        zip: shipment.shipperZip
+                    }
+                },
+                shipment: {
+                    weight: shipment.weight
+                },
+                amount: {
+                    baseRate: shipment.amount,
+                    total: shipment.amount
+                }
+            };
+
+            const ediContent = generator.generate(ediData);
+            const fileName = `EDI210_${shipment.invoiceNumber}_${Date.now()}.edi`;
+            const filePath = await generator.saveToFile(ediContent, fileName);
+
+            generatedFiles.push({
+                fileName: fileName,
+                invoiceNumber: shipment.invoiceNumber,
+                shipmentId: shipment.shipmentId,
+                shipper: shipment.shipperName,
+                consignee: shipment.consigneeName,
+                weight: shipment.weight,
+                amount: shipment.amount
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Generated ${generatedFiles.length} EDI 210 files using Claude API`,
+            shipmentType: shipmentType,
+            files: generatedFiles,
+            count: generatedFiles.length
+        });
+
+    } catch (error) {
+        console.error('Error generating EDI with Claude:', error);
         res.status(500).json({
             success: false,
             error: error.message
