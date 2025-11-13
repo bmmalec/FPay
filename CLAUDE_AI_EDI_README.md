@@ -124,15 +124,34 @@ The system supports 10 different shipment types, each with type-specific charact
 
 ## Configuration
 
-### Environment Variable Required
+### Environment Variables Required
 
 Add to your `.env` file or Azure Web App Configuration:
 
 ```bash
+# Required: Your Anthropic API key
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Optional: Claude model to use (defaults to claude-3-opus-20240229)
+CLAUDE_MODEL=claude-3-opus-20240229
 ```
 
-**Note:** The feature gracefully handles missing API keys by showing an error message to the user.
+### Available Claude Models
+
+You can configure which Claude model to use via the `CLAUDE_MODEL` environment variable:
+
+| Model | Best For | Cost | Notes |
+|-------|----------|------|-------|
+| `claude-3-opus-20240229` | **Default** - Most capable, highest quality | Higher | Best for complex data generation |
+| `claude-3-sonnet-20240229` | Balanced performance and cost | Medium | Good for most use cases |
+| `claude-3-haiku-20240307` | Fast responses, lower cost | Lower | Quickest, most economical |
+| `claude-3-5-sonnet-20241022` | Latest Sonnet 3.5 | Medium-High | May require specific API tier access |
+| `claude-3-5-sonnet-20240620` | Previous Sonnet 3.5 | Medium-High | May require specific API tier access |
+
+**Note:**
+- The feature gracefully handles missing API keys by showing an error message to the user
+- If your API key doesn't have access to Sonnet 3.5 models, use Opus or Sonnet 3
+- You can change the model without redeploying by updating the environment variable
 
 ### Get an API Key
 
@@ -144,10 +163,12 @@ ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 ## Technical Details
 
-### Claude Model Used
-- **Model:** `claude-3-5-sonnet-20241022`
+### Claude Model Configuration
+- **Default Model:** `claude-3-opus-20240229` (widely available, highest quality)
+- **Configurable via:** `CLAUDE_MODEL` environment variable
 - **Max Tokens:** 4096
 - **Purpose:** Generate structured freight data in JSON format
+- **Fallback:** Automatically uses Opus if Sonnet 3.5 models are not accessible
 
 ### Data Generation Process
 

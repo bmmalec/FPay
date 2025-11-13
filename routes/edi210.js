@@ -453,6 +453,11 @@ router.post('/generate-with-claude', async (req, res) => {
             apiKey: apiKey
         });
 
+        // Get model from environment variable or use fallback
+        // Default to Claude 3 Opus which is more widely available
+        const model = process.env.CLAUDE_MODEL || 'claude-3-opus-20240229';
+        console.log(`Using Claude model: ${model}`);
+
         // Call Claude API to generate realistic freight data
         const prompt = `Generate ${quantity} realistic freight shipment data entries for EDI 210 Motor Carrier Freight Bills with the following specifications:
 
@@ -503,7 +508,7 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
 ]`;
 
         const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20240620',
+            model: model,
             max_tokens: 4096,
             messages: [{
                 role: 'user',
