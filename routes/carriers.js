@@ -264,11 +264,22 @@ Return ONLY a valid JSON array with this exact structure:
         });
 
         let responseText = message.content[0].text;
+
+        // Try to extract JSON from code blocks first
         const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
                          responseText.match(/```\s*([\s\S]*?)\s*```/);
         if (jsonMatch) {
             responseText = jsonMatch[1];
+        } else {
+            // If no code blocks, try to find JSON array directly
+            const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (arrayMatch) {
+                responseText = arrayMatch[0];
+            }
         }
+
+        // Clean up any remaining text before/after JSON
+        responseText = responseText.trim();
 
         const carriersData = JSON.parse(responseText);
         if (!Array.isArray(carriersData)) {
