@@ -539,10 +539,34 @@
             </div>
 
             <div class="form-section">
-                <h3>📋 EDI 210 Files</h3>
-                <p style="margin-bottom: 20px; color: #666;">List of generated EDI 210 files in the edi_files folder.</p>
-                <button class="btn btn-primary" onclick="loadEDIFiles()" style="margin-bottom: 20px;">🔄 Refresh File List</button>
-                <div id="ediFilesList" class="loading">Loading EDI files...</div>
+                <h3>📋 EDI 210 Documents</h3>
+                <p style="margin-bottom: 20px; color: #666;">Database records of all received EDI 210 documents with status tracking.</p>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <select id="statusFilter" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                        <option value="">All Statuses</option>
+                        <option value="received">Received</option>
+                        <option value="validating">Validating</option>
+                        <option value="validation_error">Validation Error</option>
+                        <option value="processing">Processing</option>
+                        <option value="processed_success">Processed Successfully</option>
+                        <option value="processed_error">Processing Error</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadEDIDocuments()" style="padding: 10px 20px;">🔄 Refresh</button>
+                </div>
+
+                <div id="ediDocumentsStats" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;">
+                    <strong>Statistics:</strong>
+                    <span id="statsText"></span>
+                </div>
+
+                <div id="ediDocumentsList" class="loading">Loading EDI documents...</div>
+
+                <div id="ediPagination" style="display: none; margin-top: 20px; text-align: center;">
+                    <button id="prevPage" class="btn btn-primary" style="padding: 10px 20px; margin: 5px;">← Previous</button>
+                    <span id="pageInfo" style="margin: 0 20px; font-weight: bold;"></span>
+                    <button id="nextPage" class="btn btn-primary" style="padding: 10px 20px; margin: 5px;">Next →</button>
+                </div>
             </div>
         </div>
     </div>
@@ -983,9 +1007,9 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    showMessage(`✅ EDI 210 file generated: ${data.fileName}`, 'success');
+                    showMessage(`✅ EDI 210 document saved to database: ${data.document.parsedData.invoiceNumber}`, 'success');
                     form.reset();
-                    loadEDIFiles();
+                    loadEDIDocuments();
                 } else {
                     showMessage(`❌ Error: ${data.error}`, 'error');
                 }
@@ -994,77 +1018,166 @@
             }
         }
 
-        async function loadEDIFiles() {
-            const container = document.getElementById('ediFilesList');
-            container.innerHTML = '<div class="loading">Loading EDI files...</div>';
+        // EDI Documents state
+        let currentPage = 1;
+        let currentStatus = '';
+
+        function getStatusBadge(status) {
+            const badges = {
+                'received': '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">📨 Received</span>',
+                'validating': '<span style="background: #ffc107; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">⏳ Validating</span>',
+                'validation_error': '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">❌ Validation Error</span>',
+                'processing': '<span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">⚙️ Processing</span>',
+                'processed_success': '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">✅ Processed</span>',
+                'processed_error': '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">❌ Processing Error</span>'
+            };
+            return badges[status] || status;
+        }
+
+        async function loadEDIDocuments(page = 1) {
+            const container = document.getElementById('ediDocumentsList');
+            const statsContainer = document.getElementById('ediDocumentsStats');
+            const paginationContainer = document.getElementById('ediPagination');
+            container.innerHTML = '<div class="loading">Loading EDI documents...</div>';
 
             try {
-                const res = await fetch('/api/edi210/files');
+                const statusFilter = document.getElementById('statusFilter').value;
+                currentPage = page;
+                currentStatus = statusFilter;
+
+                let url = `/api/edi210/documents?page=${page}&limit=20&sortBy=receivedAt&sortOrder=desc`;
+                if (statusFilter) {
+                    url += `&status=${statusFilter}`;
+                }
+
+                const res = await fetch(url);
                 const data = await res.json();
 
-                if (data.success && data.files.length > 0) {
+                // Show statistics
+                if (data.statistics) {
+                    const stats = data.statistics;
+                    document.getElementById('statsText').innerHTML = `
+                        Total: ${stats.total} |
+                        Received: ${stats.received} |
+                        Success: ${stats.processed_success} |
+                        Errors: ${stats.validation_error + stats.processed_error}
+                    `;
+                    statsContainer.style.display = 'block';
+                }
+
+                if (data.success && data.data.length > 0) {
                     let html = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; background: white;">';
                     html += '<thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
-                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">File Name</th>';
-                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Size</th>';
-                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Created</th>';
+                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Invoice #</th>';
+                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Shipper → Consignee</th>';
+                    html += '<th style="padding: 12px; text-align: center; font-weight: 600;">Weight/Amount</th>';
+                    html += '<th style="padding: 12px; text-align: center; font-weight: 600;">Status</th>';
+                    html += '<th style="padding: 12px; text-align: center; font-weight: 600;">Received</th>';
                     html += '<th style="padding: 12px; text-align: center; font-weight: 600;">Actions</th>';
                     html += '</tr></thead><tbody>';
 
-                    data.files.forEach(file => {
-                        const date = new Date(file.created).toLocaleString();
-                        const size = (file.size / 1024).toFixed(2);
-                        html += `<tr style="border-bottom: 1px solid #dee2e6;">`;
-                        html += `<td style="padding: 12px;">${file.fileName}</td>`;
-                        html += `<td style="padding: 12px;">${size} KB</td>`;
-                        html += `<td style="padding: 12px;">${date}</td>`;
+                    data.data.forEach(doc => {
+                        const received = new Date(doc.receivedAt).toLocaleString();
+                        const hasError = doc.status.includes('error');
+                        const canProcess = doc.status === 'received' || doc.status === 'validation_error';
+
+                        html += `<tr style="border-bottom: 1px solid #dee2e6; ${hasError ? 'background: #fff3cd;' : ''}">`;
+                        html += `<td style="padding: 12px;"><strong>${doc.parsedData?.invoiceNumber || 'N/A'}</strong><br/><small style="color: #666;">${doc.controlNumber}</small></td>`;
+                        html += `<td style="padding: 12px;">${doc.parsedData?.shipperName || 'N/A'} → ${doc.parsedData?.consigneeName || 'N/A'}</td>`;
+                        html += `<td style="padding: 12px; text-align: center;">${doc.parsedData?.weight || 0} lbs<br/>$${(doc.parsedData?.amount || 0).toFixed(2)}</td>`;
+                        html += `<td style="padding: 12px; text-align: center;">${getStatusBadge(doc.status)}`;
+
+                        // Show error badge if intentional
+                        if (doc.sourceMetadata?.intentionalError) {
+                            html += '<br/><small style="color: #856404;">⚠️ Test Error</small>';
+                        }
+                        html += '</td>';
+
+                        html += `<td style="padding: 12px; text-align: center;"><small>${received}</small>`;
+                        if (doc.processedAt) {
+                            const processed = new Date(doc.processedAt).toLocaleString();
+                            html += `<br/><small style="color: #666;">Proc: ${processed}</small>`;
+                        }
+                        html += '</td>';
+
                         html += `<td style="padding: 12px; text-align: center;">`;
-                        html += `<button class="btn btn-success" style="padding: 8px 16px; font-size: 0.9em; margin: 2px;" onclick="processEDIFile('${file.fileName}')">📥 Process & Create Invoice</button>`;
-                        html += `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9em; margin: 2px;" onclick="viewEDIFile('${file.fileName}')">👁️ View</button>`;
+                        if (canProcess) {
+                            html += `<button class="btn btn-success" style="padding: 6px 12px; font-size: 0.85em; margin: 2px;" onclick="processEDIDocument('${doc._id}', '${doc.parsedData?.invoiceNumber}')">📥 Process</button>`;
+                        }
+                        html += `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em; margin: 2px;" onclick="viewEDIDocument('${doc._id}')">👁️ View</button>`;
+
+                        // Show errors button if there are validation errors
+                        if (doc.validationErrors && doc.validationErrors.length > 0) {
+                            html += `<button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85em; margin: 2px;" onclick="showValidationErrors('${doc._id}')">⚠️ Errors (${doc.validationErrors.length})</button>`;
+                        }
                         html += `</td></tr>`;
                     });
 
                     html += '</tbody></table></div>';
                     container.innerHTML = html;
+
+                    // Show pagination
+                    if (data.pagination) {
+                        const pag = data.pagination;
+                        document.getElementById('pageInfo').textContent = `Page ${pag.page} of ${pag.pages} (${pag.total} total)`;
+                        document.getElementById('prevPage').disabled = !pag.hasPrev;
+                        document.getElementById('nextPage').disabled = !pag.hasNext;
+                        paginationContainer.style.display = 'block';
+                    }
                 } else {
-                    container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">No EDI 210 files found. Generate one above to get started.</p>';
+                    container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">No EDI 210 documents found. Generate one above to get started.</p>';
+                    paginationContainer.style.display = 'none';
                 }
             } catch (error) {
-                container.innerHTML = `<p style="color: #dc3545; padding: 20px;">Error loading EDI files: ${error.message}</p>`;
+                container.innerHTML = `<p style="color: #dc3545; padding: 20px;">Error loading EDI documents: ${error.message}</p>`;
+                paginationContainer.style.display = 'none';
             }
         }
 
-        async function processEDIFile(fileName) {
-            if (!confirm(`Process EDI file "${fileName}" and create an invoice?`)) {
+        async function processEDIDocument(id, invoiceNumber) {
+            if (!confirm(`Process EDI document "${invoiceNumber}" and create an invoice?`)) {
                 return;
             }
 
             try {
-                showMessage('Processing EDI 210 file...', 'success');
+                showMessage('Processing EDI 210 document...', 'success');
 
-                const res = await fetch(`/api/edi210/process-file/${fileName}`, {
+                const res = await fetch(`/api/edi210/process/${id}`, {
                     method: 'POST'
                 });
 
                 const data = await res.json();
 
                 if (data.success) {
-                    showMessage(`✅ Invoice created: ${data.invoiceNumber} (ID: ${data.invoiceId})`, 'success');
+                    showMessage(`✅ Invoice created: ${data.invoice.invoiceNumber} (ID: ${data.invoice.id})`, 'success');
                     loadStats();
+                    loadEDIDocuments(currentPage);
                 } else {
-                    showMessage(`❌ Error: ${data.error}`, 'error');
+                    if (data.validationErrors) {
+                        let errorMsg = `❌ Validation failed:\n`;
+                        data.validationErrors.forEach(err => {
+                            errorMsg += `\n• ${err.field}: ${err.message}`;
+                        });
+                        showMessage(errorMsg, 'error');
+                    } else {
+                        showMessage(`❌ Error: ${data.error}`, 'error');
+                    }
+                    loadEDIDocuments(currentPage);
                 }
             } catch (error) {
-                showMessage(`❌ Error processing EDI file: ${error.message}`, 'error');
+                showMessage(`❌ Error processing EDI document: ${error.message}`, 'error');
+                loadEDIDocuments(currentPage);
             }
         }
 
-        async function viewEDIFile(fileName) {
+        async function viewEDIDocument(id) {
             try {
-                const res = await fetch(`/api/edi210/files/${fileName}`);
+                const res = await fetch(`/api/edi210/documents/${id}`);
                 const data = await res.json();
 
                 if (data.success) {
+                    const doc = data.document;
+
                     // Create modal to display EDI content
                     const modal = document.createElement('div');
                     modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px;';
@@ -1072,12 +1185,32 @@
                     const content = document.createElement('div');
                     content.style.cssText = 'background: white; padding: 30px; border-radius: 10px; max-width: 900px; max-height: 80vh; overflow: auto; width: 100%;';
 
+                    let errorSection = '';
+                    if (doc.validationErrors && doc.validationErrors.length > 0) {
+                        errorSection = '<div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin-bottom: 15px;">';
+                        errorSection += '<strong style="color: #842029;">Validation Errors:</strong><ul style="margin: 10px 0 0 20px;">';
+                        doc.validationErrors.forEach(err => {
+                            errorSection += `<li style="color: #842029;">${err.field}: ${err.message}</li>`;
+                        });
+                        errorSection += '</ul></div>';
+                    }
+
+                    if (doc.processingError) {
+                        errorSection += '<div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin-bottom: 15px;">';
+                        errorSection += `<strong style="color: #842029;">Processing Error:</strong><p style="color: #842029; margin: 5px 0;">${doc.processingError.message}</p>`;
+                        errorSection += '</div>';
+                    }
+
                     content.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 style="color: #333; margin: 0;">📄 ${fileName}</h3>
+                            <div>
+                                <h3 style="color: #333; margin: 0;">📄 ${doc.parsedData?.invoiceNumber || 'EDI Document'}</h3>
+                                <p style="margin: 5px 0; color: #666;">Control #: ${doc.controlNumber} | Status: ${doc.status}</p>
+                            </div>
                             <button onclick="this.closest('.edi-modal').remove()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: 600;">Close</button>
                         </div>
-                        <pre style="background: #f8f9fa; padding: 20px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.85em; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">${data.content}</pre>
+                        ${errorSection}
+                        <pre style="background: #f8f9fa; padding: 20px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.85em; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">${doc.ediContent}</pre>
                     `;
 
                     modal.className = 'edi-modal';
@@ -1094,15 +1227,60 @@
                     showMessage(`❌ Error: ${data.error}`, 'error');
                 }
             } catch (error) {
-                showMessage(`❌ Error viewing EDI file: ${error.message}`, 'error');
+                showMessage(`❌ Error viewing EDI document: ${error.message}`, 'error');
             }
         }
 
-        // Load EDI files when admin panel is shown
+        async function showValidationErrors(id) {
+            try {
+                const res = await fetch(`/api/edi210/documents/${id}`);
+                const data = await res.json();
+
+                if (data.success && data.document.validationErrors) {
+                    let errorMsg = '⚠️ Validation Errors:\n\n';
+                    data.document.validationErrors.forEach(err => {
+                        errorMsg += `• ${err.field}: ${err.message} (${err.code})\n`;
+                    });
+                    alert(errorMsg);
+                }
+            } catch (error) {
+                showMessage(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Pagination handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        loadEDIDocuments(currentPage - 1);
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    loadEDIDocuments(currentPage + 1);
+                });
+            }
+
+            // Status filter change handler
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) {
+                statusFilter.addEventListener('change', () => {
+                    loadEDIDocuments(1); // Reset to page 1 when filtering
+                });
+            }
+        });
+
+        // Load EDI documents when admin panel is shown
         const originalShowAdminPanel = showAdminPanel;
         showAdminPanel = function() {
             originalShowAdminPanel();
-            loadEDIFiles();
+            loadEDIDocuments();
         };
 
         // Claude AI-powered EDI generation
@@ -1144,17 +1322,17 @@
                 submitBtn.innerHTML = originalBtnText;
 
                 if (data.success) {
-                    let fileList = data.files.map(f =>
+                    let fileList = data.documents.map(f =>
                         `• ${f.invoiceNumber}: ${f.shipper} → ${f.consignee} (${f.weight} lbs, $${f.amount})`
                     ).join('\n');
 
                     showMessage(
-                        `✅ Successfully generated ${data.count} EDI 210 file(s) for ${data.shipmentType}!\n\n${fileList}`,
+                        `✅ Successfully generated ${data.count} EDI 210 document(s) for ${data.shipmentType}!\n\n${fileList}`,
                         'success'
                     );
 
                     form.reset();
-                    loadEDIFiles();
+                    loadEDIDocuments();
                 } else {
                     showMessage(`❌ Error: ${data.error}`, 'error');
                 }

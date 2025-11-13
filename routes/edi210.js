@@ -54,10 +54,12 @@ router.post('/generate', async (req, res) => {
         res.json({
             success: true,
             message: 'EDI 210 document created successfully',
-            ediDocument: {
+            document: {
                 id: ediDoc._id,
                 controlNumber: ediDoc.controlNumber,
-                invoiceNumber: ediDoc.parsedData.invoiceNumber,
+                parsedData: {
+                    invoiceNumber: ediDoc.parsedData.invoiceNumber
+                },
                 status: ediDoc.status,
                 receivedAt: ediDoc.receivedAt
             }
