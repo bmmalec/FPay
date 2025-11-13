@@ -802,7 +802,11 @@
                     document.getElementById('quickPayDiscount').value = carrier.quickPayDiscount;
                     document.getElementById('creditLimit').value = carrier.creditLimit;
                     document.getElementById('status').value = carrier.status;
-                    document.getElementById('notes').value = carrier.notes || '';
+                    // Notes is now an array - display the most recent note if exists
+                    const notesText = Array.isArray(carrier.notes) && carrier.notes.length > 0
+                        ? carrier.notes[0].content
+                        : (typeof carrier.notes === 'string' ? carrier.notes : '');
+                    document.getElementById('notes').value = notesText;
 
                     // Set service types
                     const serviceSelect = document.getElementById('serviceTypes');
@@ -853,9 +857,17 @@
                 paymentTerms: document.getElementById('paymentTerms').value,
                 quickPayDiscount: parseFloat(document.getElementById('quickPayDiscount').value),
                 creditLimit: parseFloat(document.getElementById('creditLimit').value),
-                status: document.getElementById('status').value,
-                notes: document.getElementById('notes').value || undefined
+                status: document.getElementById('status').value
             };
+
+            // Only include notes for new carriers (for backward compatibility)
+            // For existing carriers, use the dedicated notes API endpoint
+            if (!currentCarrierId) {
+                const notesValue = document.getElementById('notes').value;
+                if (notesValue) {
+                    carrierData.notes = notesValue;
+                }
+            }
 
             try {
                 let res;
