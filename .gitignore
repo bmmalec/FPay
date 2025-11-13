@@ -34,9 +34,9 @@ tmp/
 temp/
 *.tmp
 
-# EDI files
-edi_files/
-*.edi
+# EDI files (but keep the directory structure)
+edi_files/*.edi
+!edi_files/.gitkeep
 
 # Azure
 .azure/
