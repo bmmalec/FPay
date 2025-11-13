@@ -445,6 +445,70 @@
                     <button type="submit" class="btn btn-success">Create Invoice</button>
                 </form>
             </div>
+
+            <div class="stats-section" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h2>📄 EDI 210 - Freight Bill Management</h2>
+                <p style="margin-top: 10px; opacity: 0.95;">Generate and process EDI 210 Motor Carrier Freight Details and Invoice files</p>
+            </div>
+
+            <div class="form-section">
+                <h3>📤 Generate EDI 210 Freight Bill</h3>
+                <p style="margin-bottom: 20px; color: #666;">Create an EDI 210 file from custom freight data and save it to the edi_files folder.</p>
+                <form id="edi210Form" onsubmit="generateEDI210(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Invoice Number *</label>
+                            <input type="text" name="invoiceNumber" placeholder="INV-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Shipment ID *</label>
+                            <input type="text" name="shipmentId" placeholder="SHIP-001" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Shipper Name *</label>
+                            <input type="text" name="shipperName" placeholder="ABC Manufacturing" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Consignee Name *</label>
+                            <input type="text" name="consigneeName" placeholder="XYZ Distribution" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Origin (City, ST ZIP) *</label>
+                            <input type="text" name="origin" placeholder="Los Angeles, CA 90001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Destination (City, ST ZIP) *</label>
+                            <input type="text" name="destination" placeholder="New York, NY 10001" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Weight (lbs) *</label>
+                            <input type="number" name="weight" placeholder="1000" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Amount ($) *</label>
+                            <input type="number" name="amount" placeholder="850.00" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bill-To Customer Name *</label>
+                        <input type="text" name="billToName" placeholder="Customer Company Inc." required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Generate EDI 210 File</button>
+                </form>
+            </div>
+
+            <div class="form-section">
+                <h3>📋 EDI 210 Files</h3>
+                <p style="margin-bottom: 20px; color: #666;">List of generated EDI 210 files in the edi_files folder.</p>
+                <button class="btn btn-primary" onclick="loadEDIFiles()" style="margin-bottom: 20px;">🔄 Refresh File List</button>
+                <div id="ediFilesList" class="loading">Loading EDI files...</div>
+            </div>
         </div>
     </div>
 
@@ -812,6 +876,199 @@
                 dueDateInput.value = date.toISOString().split('T')[0];
             }
         });
+
+        // EDI 210 Functions
+        async function generateEDI210(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            // Parse origin and destination
+            const parseLocation = (loc) => {
+                const parts = loc.split(',').map(p => p.trim());
+                const cityState = parts[0];
+                const state = parts[1] || '';
+                const zip = parts[2] || '';
+                return { city: cityState, state, zip };
+            };
+
+            const origin = parseLocation(formData.get('origin'));
+            const destination = parseLocation(formData.get('destination'));
+
+            const ediData = {
+                invoiceNumber: formData.get('invoiceNumber'),
+                shipmentId: formData.get('shipmentId'),
+                invoiceDate: new Date(),
+                netAmount: parseFloat(formData.get('amount')),
+                shipper: {
+                    name: formData.get('shipperName'),
+                    address: {
+                        street: '123 Shipper St',
+                        city: origin.city,
+                        state: origin.state,
+                        zip: origin.zip
+                    }
+                },
+                consignee: {
+                    name: formData.get('consigneeName'),
+                    address: {
+                        street: '456 Consignee Ave',
+                        city: destination.city,
+                        state: destination.state,
+                        zip: destination.zip
+                    }
+                },
+                billTo: {
+                    name: formData.get('billToName'),
+                    address: {
+                        street: '789 Customer Blvd',
+                        city: destination.city,
+                        state: destination.state,
+                        zip: destination.zip
+                    }
+                },
+                shipment: {
+                    weight: parseFloat(formData.get('weight'))
+                },
+                amount: {
+                    baseRate: parseFloat(formData.get('amount')),
+                    total: parseFloat(formData.get('amount'))
+                }
+            };
+
+            try {
+                showMessage('Generating EDI 210 file...', 'success');
+
+                const res = await fetch('/api/edi210/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ediData)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage(`✅ EDI 210 file generated: ${data.fileName}`, 'success');
+                    form.reset();
+                    loadEDIFiles();
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error generating EDI 210: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadEDIFiles() {
+            const container = document.getElementById('ediFilesList');
+            container.innerHTML = '<div class="loading">Loading EDI files...</div>';
+
+            try {
+                const res = await fetch('/api/edi210/files');
+                const data = await res.json();
+
+                if (data.success && data.files.length > 0) {
+                    let html = '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; background: white;">';
+                    html += '<thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
+                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">File Name</th>';
+                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Size</th>';
+                    html += '<th style="padding: 12px; text-align: left; font-weight: 600;">Created</th>';
+                    html += '<th style="padding: 12px; text-align: center; font-weight: 600;">Actions</th>';
+                    html += '</tr></thead><tbody>';
+
+                    data.files.forEach(file => {
+                        const date = new Date(file.created).toLocaleString();
+                        const size = (file.size / 1024).toFixed(2);
+                        html += `<tr style="border-bottom: 1px solid #dee2e6;">`;
+                        html += `<td style="padding: 12px;">${file.fileName}</td>`;
+                        html += `<td style="padding: 12px;">${size} KB</td>`;
+                        html += `<td style="padding: 12px;">${date}</td>`;
+                        html += `<td style="padding: 12px; text-align: center;">`;
+                        html += `<button class="btn btn-success" style="padding: 8px 16px; font-size: 0.9em; margin: 2px;" onclick="processEDIFile('${file.fileName}')">📥 Process & Create Invoice</button>`;
+                        html += `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9em; margin: 2px;" onclick="viewEDIFile('${file.fileName}')">👁️ View</button>`;
+                        html += `</td></tr>`;
+                    });
+
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">No EDI 210 files found. Generate one above to get started.</p>';
+                }
+            } catch (error) {
+                container.innerHTML = `<p style="color: #dc3545; padding: 20px;">Error loading EDI files: ${error.message}</p>`;
+            }
+        }
+
+        async function processEDIFile(fileName) {
+            if (!confirm(`Process EDI file "${fileName}" and create an invoice?`)) {
+                return;
+            }
+
+            try {
+                showMessage('Processing EDI 210 file...', 'success');
+
+                const res = await fetch(`/api/edi210/process-file/${fileName}`, {
+                    method: 'POST'
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage(`✅ Invoice created: ${data.invoiceNumber} (ID: ${data.invoiceId})`, 'success');
+                    loadStats();
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error processing EDI file: ${error.message}`, 'error');
+            }
+        }
+
+        async function viewEDIFile(fileName) {
+            try {
+                const res = await fetch(`/api/edi210/files/${fileName}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    // Create modal to display EDI content
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px;';
+
+                    const content = document.createElement('div');
+                    content.style.cssText = 'background: white; padding: 30px; border-radius: 10px; max-width: 900px; max-height: 80vh; overflow: auto; width: 100%;';
+
+                    content.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="color: #333; margin: 0;">📄 ${fileName}</h3>
+                            <button onclick="this.closest('.edi-modal').remove()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: 600;">Close</button>
+                        </div>
+                        <pre style="background: #f8f9fa; padding: 20px; border-radius: 5px; overflow-x: auto; font-family: monospace; font-size: 0.85em; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;">${data.content}</pre>
+                    `;
+
+                    modal.className = 'edi-modal';
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
+
+                    // Close on outside click
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    });
+                } else {
+                    showMessage(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Error viewing EDI file: ${error.message}`, 'error');
+            }
+        }
+
+        // Load EDI files when admin panel is shown
+        const originalShowAdminPanel = showAdminPanel;
+        showAdminPanel = function() {
+            originalShowAdminPanel();
+            loadEDIFiles();
+        };
     </script>
 </body>
 </html>
