@@ -1,410 +1,633 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>Admin - FPay</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="assets/images/favicon.ico">
-    <link href="assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-    <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-    <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" />
+    <title>Admin - FPay</title>
+    <link rel="stylesheet" href="/mobile.css">
     <style>
-        #pinScreen { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .pin-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; width: 100%; }
-        #adminPanel { display: none; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        nav {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-links a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pin-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .pin-dialog {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .pin-dialog h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .pin-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5em;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+        }
+
+        .pin-error {
+            color: #dc3545;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .admin-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .admin-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-card p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .stats-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
     </style>
 </head>
-<body data-sidebar="dark">
-    <!-- PIN Entry Screen -->
-    <div id="pinScreen">
-        <div class="pin-card text-center">
-            <h2 class="mb-4">🔒 Admin Access</h2>
-            <p class="text-muted mb-4">Enter PIN to access admin panel</p>
-            <input type="password" id="pinInput" class="form-control form-control-lg text-center mb-3" placeholder="Enter PIN" onkeyup="if(event.key==='Enter') checkPin()">
-            <button class="btn btn-primary btn-lg w-100" onclick="checkPin()">Unlock</button>
-            <p class="mt-3 text-muted small">Default PIN: 1234</p>
+<body>
+    <div id="pinOverlay" class="pin-overlay">
+        <div class="pin-dialog">
+            <h2>🔒 Admin Access</h2>
+            <p>Enter PIN to access admin panel</p>
+            <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="****" autocomplete="off">
+            <p class="pin-error" id="pinError">Incorrect PIN. Please try again.</p>
+            <button class="btn btn-primary" onclick="checkPin()">Submit</button>
         </div>
     </div>
 
-    <!-- Admin Panel -->
-    <div id="adminPanel">
-        <div id="layout-wrapper">
-            <header id="page-topbar">
-                <div class="navbar-header">
-                    <div class="d-flex">
-                        <div class="navbar-brand-box">
-                            <a href="/" class="logo logo-light">
-                                <span class="logo-lg"><h3 class="mb-0 text-white">🚛 FPay Admin</h3></span>
-                            </a>
-                        </div>
-                        <button type="button" class="btn btn-sm px-3 font-size-24 header-item waves-effect" id="vertical-menu-btn">
-                            <i class="ri-menu-2-line align-middle"></i>
-                        </button>
+    <div id="adminContent" style="display: none;">
+        <nav>
+            <div class="nav-brand">🚛 FPay Admin</div>
+            <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <a href="/">Home</a>
+                <a href="/invoices.html">Invoices</a>
+                <a href="/payments.html">Payments</a>
+                <a href="/carriers.html">Carriers</a>
+                <a href="/admin.html" class="active">Admin</a>
+            </div>
+        </nav>
+
+        <div class="container">
+            <h1>⚙️ Admin Panel</h1>
+            <div class="subtitle">Manage test data and database operations</div>
+
+            <div id="message" class="message"></div>
+
+            <div class="stats-section">
+                <h2>Database Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="invoiceCount">-</div>
+                        <div class="stat-label">Invoices</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="paymentCount">-</div>
+                        <div class="stat-label">Payments</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalInvoiceAmount">-</div>
+                        <div class="stat-label">Invoice Total</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalPaymentAmount">-</div>
+                        <div class="stat-label">Payment Total</div>
                     </div>
                 </div>
-            </header>
+                <button class="btn btn-warning" onclick="loadStats()" style="margin-top: 20px; width: auto; padding: 10px 30px;">
+                    🔄 Refresh Stats
+                </button>
+            </div>
 
-            <div class="vertical-menu">
-                <div data-simplebar class="h-100">
-                    <div id="sidebar-menu">
-                        <ul class="metismenu list-unstyled" id="side-menu">
-                            <li class="menu-title">Menu</li>
-                            <li><a href="/"><i class="ri-dashboard-line"></i><span>Dashboard</span></a></li>
-                            <li><a href="/invoices.html"><i class="ri-file-list-3-line"></i><span>Invoices</span></a></li>
-                            <li><a href="/payments.html"><i class="ri-money-dollar-circle-line"></i><span>Payments</span></a></li>
-                            <li><a href="/carriers.html"><i class="ri-truck-line"></i><span>Carriers</span></a></li>
-                            <li><a href="/admin.html" class="active"><i class="ri-settings-3-line"></i><span>Admin</span></a></li>
-                        </ul>
-                    </div>
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3>📦 Seed Sample Data</h3>
+                    <p>Create 3 sample invoices and 1 payment for testing. This will clear existing data first.</p>
+                    <button class="btn btn-success" onclick="seedDatabase()">Generate Sample Data</button>
+                </div>
+
+                <div class="admin-card">
+                    <h3>🔥 Clear All Data</h3>
+                    <p>Remove all invoices and payments from the database. This action cannot be undone.</p>
+                    <button class="btn btn-danger" onclick="clearDatabase()">Clear Database</button>
+                </div>
+
+                <div class="admin-card">
+                    <h3>📄 Quick Invoice</h3>
+                    <p>Quickly generate a single random invoice with realistic freight data.</p>
+                    <button class="btn btn-primary" onclick="createQuickInvoice()">Create Random Invoice</button>
+                </div>
+
+                <div class="admin-card">
+                    <h3>💳 Quick Payment</h3>
+                    <p>Create a payment for the most recent unpaid invoice in the system.</p>
+                    <button class="btn btn-primary" onclick="createQuickPayment()">Create Payment</button>
                 </div>
             </div>
 
-            <div class="main-content">
-                <div class="page-content">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="page-title-box d-flex align-items-center justify-content-between">
-                                    <h4 class="mb-0">Administration</h4>
-                                    <div class="page-title-right">
-                                        <ol class="breadcrumb m-0">
-                                            <li class="breadcrumb-item"><a href="/">FPay</a></li>
-                                            <li class="breadcrumb-item active">Admin</li>
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
+            <div class="form-section">
+                <h3>➕ Create Custom Invoice</h3>
+                <form id="invoiceForm" onsubmit="createCustomInvoice(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Customer Name *</label>
+                            <input type="text" name="customerName" required>
                         </div>
-
-                        <!-- Message Alert -->
-                        <div id="message" class="alert" style="display:none;" role="alert"></div>
-
-                        <!-- Stats Row -->
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex">
-                                            <div class="flex-1">
-                                                <p class="text-muted mb-2">Invoices</p>
-                                                <h4 class="mb-0" id="statsInvoices">-</h4>
-                                            </div>
-                                            <div class="text-primary ms-auto">
-                                                <i class="ri-file-list-3-line font-size-24"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex">
-                                            <div class="flex-1">
-                                                <p class="text-muted mb-2">Payments</p>
-                                                <h4 class="mb-0" id="statsPayments">-</h4>
-                                            </div>
-                                            <div class="text-success ms-auto">
-                                                <i class="ri-money-dollar-circle-line font-size-24"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex">
-                                            <div class="flex-1">
-                                                <p class="text-muted mb-2">Carriers</p>
-                                                <h4 class="mb-0" id="statsCarriers">-</h4>
-                                            </div>
-                                            <div class="text-info ms-auto">
-                                                <i class="ri-truck-line font-size-24"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex">
-                                            <div class="flex-1">
-                                                <p class="text-muted mb-2">EDI Docs</p>
-                                                <h4 class="mb-0" id="statsEDI">-</h4>
-                                            </div>
-                                            <div class="text-warning ms-auto">
-                                                <i class="ri-file-code-line font-size-24"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label>Customer Email *</label>
+                            <input type="email" name="customerEmail" required>
                         </div>
-
-                        <!-- Database Management -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">Database Management</h5>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-success" onclick="seedDatabase()">
-                                                <i class="ri-database-2-line"></i> Seed Database
-                                            </button>
-                                            <button class="btn btn-danger" onclick="clearDatabase()">
-                                                <i class="ri-delete-bin-line"></i> Clear Database
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">Quick Actions</h5>
-                                        <button class="btn btn-primary w-100 mb-2" onclick="createQuickInvoice()">
-                                            <i class="ri-file-add-line"></i> Create Quick Invoice
-                                        </button>
-                                        <button class="btn btn-primary w-100" onclick="createQuickPayment()">
-                                            <i class="ri-money-dollar-circle-line"></i> Create Quick Payment
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">AI Generation</h5>
-                                        <form onsubmit="generateEDIWithClaude(event)">
-                                            <div class="mb-2">
-                                                <input type="number" class="form-control" name="count" placeholder="Number of EDI docs" min="1" max="50" value="5">
-                                            </div>
-                                            <button type="submit" class="btn btn-info w-100 mb-2">
-                                                <i class="ri-sparkling-line"></i> Generate EDI with AI
-                                            </button>
-                                        </form>
-                                        <form onsubmit="generateCarriersWithClaude(event)">
-                                            <div class="mb-2">
-                                                <input type="number" class="form-control" name="count" placeholder="Number of carriers" min="1" max="20" value="3">
-                                            </div>
-                                            <button type="submit" class="btn btn-info w-100">
-                                                <i class="ri-sparkling-line"></i> Generate Carriers with AI
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Custom Invoice Form -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">Create Custom Invoice</h5>
-                                        <form id="invoiceForm" onsubmit="createCustomInvoice(event)">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Invoice Number</label>
-                                                    <input type="text" class="form-control" name="invoiceNumber" placeholder="INV-001" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Customer Name</label>
-                                                    <input type="text" class="form-control" name="customerName" placeholder="ACME Corp" required>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Carrier Name</label>
-                                                    <input type="text" class="form-control" name="carrierName" placeholder="Swift Transport" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Total Amount</label>
-                                                    <input type="number" class="form-control" name="totalAmount" placeholder="1500.00" step="0.01" required>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-4 mb-3">
-                                                    <label class="form-label">Origin City</label>
-                                                    <input type="text" class="form-control" name="originCity" placeholder="Los Angeles" required>
-                                                </div>
-                                                <div class="col-md-2 mb-3">
-                                                    <label class="form-label">State</label>
-                                                    <input type="text" class="form-control" name="originState" placeholder="CA" maxlength="2" required>
-                                                </div>
-                                                <div class="col-md-4 mb-3">
-                                                    <label class="form-label">Destination City</label>
-                                                    <input type="text" class="form-control" name="destCity" placeholder="New York" required>
-                                                </div>
-                                                <div class="col-md-2 mb-3">
-                                                    <label class="form-label">State</label>
-                                                    <input type="text" class="form-control" name="destState" placeholder="NY" maxlength="2" required>
-                                                </div>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="ri-save-line"></i> Create Invoice
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- EDI Generation Form -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">Generate EDI 210</h5>
-                                        <form id="ediForm" onsubmit="generateEDI210(event)">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Shipper Name</label>
-                                                    <input type="text" class="form-control" name="shipperName" placeholder="ABC Logistics" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Consignee Name</label>
-                                                    <input type="text" class="form-control" name="consigneeName" placeholder="XYZ Distribution" required>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Carrier Name</label>
-                                                    <input type="text" class="form-control" name="carrierName" placeholder="Fast Freight Inc" required>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Total Charges</label>
-                                                    <input type="number" class="form-control" name="totalCharges" placeholder="2500.00" step="0.01" required>
-                                                </div>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="ri-file-code-line"></i> Generate EDI 210
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- EDI Documents -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">EDI 210 Documents</h5>
-                                        <div id="ediLoading" class="text-center py-4">
-                                            <div class="spinner-border text-primary"></div>
-                                            <p class="mt-2">Loading EDI documents...</p>
-                                        </div>
-                                        <div class="table-responsive" id="ediTableContainer" style="display: none;">
-                                            <table class="table table-hover table-centered mb-0">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>Document #</th>
-                                                        <th>Carrier</th>
-                                                        <th>Invoice #</th>
-                                                        <th>Total Charges</th>
-                                                        <th>Status</th>
-                                                        <th>Created</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="ediBody"></tbody>
-                                            </table>
-                                        </div>
-                                        <div id="ediPaginationContainer" class="mt-3 d-flex justify-content-between" style="display: none;">
-                                            <div id="ediPaginationInfo"></div>
-                                            <nav>
-                                                <ul class="pagination mb-0" id="ediPagination"></ul>
-                                            </nav>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Carriers -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-3">Carriers</h5>
-                                        <div id="carriersLoading" class="text-center py-4">
-                                            <div class="spinner-border text-primary"></div>
-                                            <p class="mt-2">Loading carriers...</p>
-                                        </div>
-                                        <div class="table-responsive" id="carriersTableContainer" style="display: none;">
-                                            <table class="table table-hover table-centered mb-0">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>Company</th>
-                                                        <th>MC / DOT</th>
-                                                        <th>Contact</th>
-                                                        <th>Status</th>
-                                                        <th>Created</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="carriersBody"></tbody>
-                                            </table>
-                                        </div>
-                                        <div id="carriersPaginationContainer" class="mt-3 d-flex justify-content-between" style="display: none;">
-                                            <div id="carriersPaginationInfo"></div>
-                                            <nav>
-                                                <ul class="pagination mb-0" id="carriersPagination"></ul>
-                                            </nav>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Carrier Name *</label>
+                            <input type="text" name="carrierName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Base Rate ($) *</label>
+                            <input type="number" name="baseRate" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Origin City *</label>
+                            <input type="text" name="originCity" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Origin State *</label>
+                            <input type="text" name="originState" maxlength="2" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Destination City *</label>
+                            <input type="text" name="destCity" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Destination State *</label>
+                            <input type="text" name="destState" maxlength="2" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select name="status" required>
+                                <option value="draft">Draft</option>
+                                <option value="sent" selected>Sent</option>
+                                <option value="viewed">Viewed</option>
+                                <option value="paid">Paid</option>
+                                <option value="overdue">Overdue</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Due Date *</label>
+                            <input type="date" name="dueDate" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Create Invoice</button>
+                </form>
+            </div>
+
+            <div class="stats-section" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                <h2>🚚 Carrier Management</h2>
+                <p style="margin-top: 10px; opacity: 0.95;">Manage motor carrier companies and transportation providers</p>
+            </div>
+
+            <div class="form-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;">🤖 AI-Powered Carrier Generation with Claude</h3>
+                <p style="margin-bottom: 20px; opacity: 0.95;">Let Claude AI generate realistic motor carrier companies with complete profiles</p>
+                <form id="claudeCarrierForm" onsubmit="generateCarriersWithClaude(event)" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="color: white;">Service Types *</label>
+                            <select name="serviceTypes" multiple size="5" required style="background: white; color: #333;">
+                                <option value="LTL">LTL (Less Than Truckload)</option>
+                                <option value="FTL" selected>FTL (Full Truckload)</option>
+                                <option value="Refrigerated">Refrigerated</option>
+                                <option value="Flatbed">Flatbed</option>
+                                <option value="Intermodal">Intermodal</option>
+                                <option value="Hazmat">Hazmat</option>
+                                <option value="Expedited">Expedited</option>
+                                <option value="Parcel">Parcel</option>
+                                <option value="White Glove">White Glove</option>
+                                <option value="Oversize">Oversize/Heavy Haul</option>
+                            </select>
+                            <small style="color: rgba(255,255,255,0.8); display: block; margin-top: 5px;">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                        <div class="form-group">
+                            <label style="color: white;">Quantity (1-10) *</label>
+                            <input type="number" name="quantity" min="1" max="10" value="3" required style="background: white; color: #333;">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="background: #28a745; width: 100%;">
+                        🚀 Generate Carriers with Claude AI
+                    </button>
+                    <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                        💡 Claude will generate complete carrier profiles with MC/DOT numbers, addresses, insurance info, and service capabilities
+                    </p>
+                </form>
+            </div>
+
+            <div class="form-section">
+                <h3>🚛 Carrier List</h3>
+                <p style="margin-bottom: 20px; color: #666;">View and manage all carriers in the system</p>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <input type="text" id="carrierSearch" placeholder="Search carriers..." style="flex: 1; min-width: 200px; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                    <select id="carrierStatusFilter" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadCarriers()" style="padding: 10px 20px;">🔄 Refresh</button>
+                    <button class="btn btn-success" onclick="window.location.href='/carriers.html'" style="padding: 10px 20px;">➕ Add Carrier</button>
                 </div>
 
-                <footer class="footer">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <script>document.write(new Date().getFullYear())</script> © FPay - Freight Payment Platform
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-sm-end d-none d-sm-block">Admin Panel | Build: v1.0.0</div>
-                            </div>
+                <div id="carrierStats" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;">
+                    <strong>Statistics:</strong>
+                    <span id="carrierStatsText"></span>
+                </div>
+
+                <div id="carriersList" class="loading">Loading carriers...</div>
+
+                <div id="carrierPagination" style="display: none; margin-top: 20px; text-align: center;">
+                    <button id="prevCarrierPage" class="btn btn-primary" style="padding: 10px 20px; margin: 5px;">← Previous</button>
+                    <span id="carrierPageInfo" style="margin: 0 20px; font-weight: bold;"></span>
+                    <button id="nextCarrierPage" class="btn btn-primary" style="padding: 10px 20px; margin: 5px;">Next →</button>
+                </div>
+            </div>
+
+            <div class="stats-section" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h2>📄 EDI 210 - Freight Bill Management</h2>
+                <p style="margin-top: 10px; opacity: 0.95;">Generate and process EDI 210 Motor Carrier Freight Details and Invoice files</p>
+            </div>
+
+            <div class="form-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;">🤖 AI-Powered EDI Generation with Claude</h3>
+                <p style="margin-bottom: 20px; opacity: 0.95;">Let Claude AI generate realistic freight shipment data and create EDI 210 files automatically</p>
+                <form id="claudeEDIForm" onsubmit="generateEDIWithClaude(event)" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label style="color: white;">Shipment Type *</label>
+                            <select name="shipmentType" required style="background: white; color: #333;">
+                                <option value="">-- Select Shipment Type --</option>
+                                <option value="LTL (Less Than Truckload)">LTL (Less Than Truckload)</option>
+                                <option value="FTL (Full Truckload)">FTL (Full Truckload)</option>
+                                <option value="Refrigerated/Reefer">Refrigerated/Reefer</option>
+                                <option value="Flatbed">Flatbed</option>
+                                <option value="Intermodal">Intermodal</option>
+                                <option value="Hazmat">Hazmat</option>
+                                <option value="Expedited">Expedited</option>
+                                <option value="Parcel/Small Package">Parcel/Small Package</option>
+                                <option value="White Glove">White Glove</option>
+                                <option value="Oversize/Heavy Haul">Oversize/Heavy Haul</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="color: white;">Quantity (1-20) *</label>
+                            <input type="number" name="quantity" min="1" max="20" value="3" required style="background: white; color: #333;">
                         </div>
                     </div>
-                </footer>
+                    <button type="submit" class="btn btn-success" style="background: #28a745; width: 100%;">
+                        🚀 Generate EDI 210 Files with Claude AI
+                    </button>
+                    <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                        💡 Claude will generate realistic company names, addresses, weights, and rates based on the selected shipment type
+                    </p>
+                </form>
             </div>
-        </div>
-    </div>
 
-    <!-- View EDI Modal -->
-    <div class="modal fade" id="viewEDIModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content" id="viewEDIContent"></div>
-        </div>
-    </div>
+            <div class="form-section">
+                <h3>📤 Generate EDI 210 Freight Bill</h3>
+                <p style="margin-bottom: 20px; color: #666;">Create an EDI 210 file from custom freight data and save it to the edi_files folder.</p>
+                <form id="edi210Form" onsubmit="generateEDI210(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Invoice Number *</label>
+                            <input type="text" name="invoiceNumber" placeholder="INV-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Shipment ID *</label>
+                            <input type="text" name="shipmentId" placeholder="SHIP-001" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Shipper Name *</label>
+                            <input type="text" name="shipperName" placeholder="ABC Manufacturing" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Consignee Name *</label>
+                            <input type="text" name="consigneeName" placeholder="XYZ Distribution" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Origin (City, ST ZIP) *</label>
+                            <input type="text" name="origin" placeholder="Los Angeles, CA 90001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Destination (City, ST ZIP) *</label>
+                            <input type="text" name="destination" placeholder="New York, NY 10001" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Weight (lbs) *</label>
+                            <input type="number" name="weight" placeholder="1000" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Amount ($) *</label>
+                            <input type="number" name="amount" placeholder="850.00" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Bill-To Customer Name *</label>
+                        <input type="text" name="billToName" placeholder="Customer Company Inc." required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Generate EDI 210 File</button>
+                </form>
+            </div>
 
-    <!-- Validation Errors Modal -->
-    <div class="modal fade" id="validationModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content" id="validationContent"></div>
-        </div>
-    </div>
+            <div class="form-section">
+                <h3>📋 EDI 210 Documents</h3>
+                <p style="margin-bottom: 20px; color: #666;">Database records of all received EDI 210 documents with status tracking.</p>
 
-    <script src="assets/libs/jquery/jquery.min.js"></script>
-    <script src="assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/libs/metismenu/metisMenu.min.js"></script>
-    <script src="assets/libs/simplebar/simplebar.min.js"></script>
-    <script src="assets/libs/node-waves/waves.min.js"></script>
-    <script src="assets/js/app.js"></script>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <select id="statusFilter" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                        <option value="">All Statuses</option>
+                        <option value="received">Received</option>
+                        <option value="validating">Validating</option>
+                        <option value="validation_error">Validation Error</option>
+                        <option value="processing">Processing</option>
+                        <option value="processed_success">Processed Successfully</option>
+                        <option value="processed_error">Processing Error</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadEDIDocuments()" style="padding: 10px 20px;">🔄 Refresh</button>
+                </div>
 
-    <script>
+                <div id="ediDocumentsStats" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;">
                     <strong>Statistics:</strong>
                     <span id="statsText"></span>
                 </div>
