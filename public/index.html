@@ -1,332 +1,383 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <title>FPay - Freight Payment Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freight Payment Platform - FPay</title>
-    <link rel="stylesheet" href="/mobile.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <meta content="Premium Freight Payment Platform" name="description">
+    <meta content="FPay" name="author">
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="assets/images/favicon.ico">
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        nav {
-            background: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 800px;
-            margin: 0 auto 20px auto;
-        }
-
-        .nav-brand {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 20px;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: #666;
-            padding: 8px 16px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .nav-links a:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .nav-links a.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .page-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: calc(100vh - 100px);
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            max-width: 800px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-
-        .info-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
-        }
-
-        .info-card h2 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .info-card p {
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .status {
-            display: inline-block;
-            background: #28a745;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .status.offline {
-            background: #dc3545;
-        }
-
-        .status.checking {
-            background: #ffc107;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-box {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #667eea;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .feature {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .feature-icon {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .feature h3 {
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .feature p {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        footer {
-            margin-top: 30px;
-            text-align: center;
-            color: #999;
-            font-size: 0.9em;
-        }
-    </style>
+    <!-- Bootstrap Css -->
+    <link href="assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
 </head>
-<body>
-    <nav>
-        <div class="nav-brand">🚛 FPay</div>
-        <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <div class="nav-links" id="navLinks">
-            <a href="/" class="active">Home</a>
-            <a href="/invoices.html">Invoices</a>
-            <a href="/payments.html">Payments</a>
-            <a href="/carriers.html">Carriers</a>
-            <a href="/admin.html">Admin</a>
-        </div>
-    </nav>
 
-    <div class="page-wrapper">
-        <div class="container">
-            <h1>🚛 FPay</h1>
-            <div class="subtitle">Freight Payment Platform</div>
+<body data-sidebar="dark">
 
-        <div class="info-card">
-            <h2>Welcome to FPay</h2>
-            <p>
-                Your comprehensive solution for managing freight payments efficiently.
-                This platform streamlines the entire payment process for freight services,
-                from invoice management to automated payment processing.
-            </p>
-            <span class="status checking" id="systemStatus">⏳ Checking System...</span>
+    <!-- Begin page -->
+    <div id="layout-wrapper">
 
-            <div class="stats-grid" id="statsGrid" style="display: none;">
-                <div class="stat-box">
-                    <div class="stat-value" id="dbStatus">-</div>
-                    <div class="stat-label">Database</div>
+        <header id="page-topbar">
+            <div class="navbar-header">
+                <div class="d-flex">
+                    <!-- LOGO -->
+                    <div class="navbar-brand-box">
+                        <a href="/" class="logo logo-dark">
+                            <span class="logo-sm">
+                                <h3 class="mb-0 text-primary">🚛</h3>
+                            </span>
+                            <span class="logo-lg">
+                                <h3 class="mb-0 text-primary">🚛 FPay</h3>
+                            </span>
+                        </a>
+
+                        <a href="/" class="logo logo-light">
+                            <span class="logo-sm">
+                                <h3 class="mb-0 text-white">🚛</h3>
+                            </span>
+                            <span class="logo-lg">
+                                <h3 class="mb-0 text-white">🚛 FPay</h3>
+                            </span>
+                        </a>
+                    </div>
+
+                    <button type="button" class="btn btn-sm px-3 font-size-24 header-item waves-effect" id="vertical-menu-btn">
+                        <i class="ri-menu-2-line align-middle"></i>
+                    </button>
+
+                    <!-- App Search-->
+                    <form class="app-search d-none d-lg-block">
+                        <div class="position-relative">
+                            <input type="text" class="form-control" placeholder="Search...">
+                            <span class="ri-search-line"></span>
+                        </div>
+                    </form>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="apiStatus">-</div>
-                    <div class="stat-label">API</div>
+
+                <div class="d-flex">
+                    <div class="dropdown d-none d-lg-inline-block ms-1">
+                        <button type="button" class="btn header-item noti-icon waves-effect" data-bs-toggle="fullscreen">
+                            <i class="ri-fullscreen-line"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="uptime">-</div>
-                    <div class="stat-label">Uptime</div>
+            </div>
+        </header>
+
+        <!-- ========== Left Sidebar Start ========== -->
+        <div class="vertical-menu">
+            <div data-simplebar class="h-100">
+                <!--- Sidemenu -->
+                <div id="sidebar-menu">
+                    <!-- Left Menu Start -->
+                    <ul class="metismenu list-unstyled" id="side-menu">
+                        <li class="menu-title">Menu</li>
+
+                        <li>
+                            <a href="/" class="waves-effect">
+                                <i class="ri-dashboard-line"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/invoices.html" class="waves-effect">
+                                <i class="ri-file-list-3-line"></i>
+                                <span>Invoices</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/payments.html" class="waves-effect">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                <span>Payments</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/carriers.html" class="waves-effect">
+                                <i class="ri-truck-line"></i>
+                                <span>Carriers</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/admin.html" class="waves-effect">
+                                <i class="ri-settings-3-line"></i>
+                                <span>Admin</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
+                <!-- Sidebar -->
             </div>
         </div>
+        <!-- Left Sidebar End -->
 
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon">💳</div>
-                <h3>Payments</h3>
-                <p>Secure and automated freight payment processing</p>
-            </div>
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+            <div class="page-content">
+                <div class="container-fluid">
 
-            <div class="feature">
-                <div class="feature-icon">📊</div>
-                <h3>Analytics</h3>
-                <p>Real-time insights and reporting</p>
-            </div>
+                    <!-- start page title -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="page-title-box d-flex align-items-center justify-content-between">
+                                <h4 class="mb-0">Dashboard</h4>
 
-            <div class="feature">
-                <div class="feature-icon">🔒</div>
-                <h3>Security</h3>
-                <p>Enterprise-grade security standards</p>
-            </div>
+                                <div class="page-title-right">
+                                    <ol class="breadcrumb m-0">
+                                        <li class="breadcrumb-item"><a href="javascript: void(0);">FPay</a></li>
+                                        <li class="breadcrumb-item active">Dashboard</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end page title -->
 
-            <div class="feature">
-                <div class="feature-icon">⚡</div>
-                <h3>Fast Processing</h3>
-                <p>Quick and efficient transaction handling</p>
+                    <!-- Welcome Card -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title mb-3">Welcome to FPay</h4>
+                                    <p class="text-muted">
+                                        Your comprehensive solution for managing freight payments efficiently.
+                                        This platform streamlines the entire payment process for freight services,
+                                        from invoice management to automated payment processing.
+                                    </p>
+                                    <div class="mt-3">
+                                        <span class="badge badge-soft-warning font-size-12" id="systemStatus">
+                                            <i class="mdi mdi-loading mdi-spin"></i> Checking System...
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="row" id="statsRow" style="display: none;">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <div class="flex-1 overflow-hidden">
+                                            <p class="text-truncate font-size-14 mb-2">Database Status</p>
+                                            <h4 class="mb-0" id="dbStatus">-</h4>
+                                        </div>
+                                        <div class="text-primary ms-auto">
+                                            <i class="ri-database-2-line font-size-24"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body border-top py-3">
+                                    <div class="text-truncate">
+                                        <span class="text-muted">MongoDB Connection</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <div class="flex-1 overflow-hidden">
+                                            <p class="text-truncate font-size-14 mb-2">API Status</p>
+                                            <h4 class="mb-0" id="apiStatus">-</h4>
+                                        </div>
+                                        <div class="text-primary ms-auto">
+                                            <i class="ri-server-line font-size-24"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body border-top py-3">
+                                    <div class="text-truncate">
+                                        <span class="text-muted">REST API</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <div class="flex-1 overflow-hidden">
+                                            <p class="text-truncate font-size-14 mb-2">System Uptime</p>
+                                            <h4 class="mb-0" id="uptime">-</h4>
+                                        </div>
+                                        <div class="text-primary ms-auto">
+                                            <i class="ri-time-line font-size-24"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body border-top py-3">
+                                    <div class="text-truncate">
+                                        <span class="text-muted">Server Runtime</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end stats row -->
+
+                    <!-- Features Row -->
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <div class="avatar-sm mx-auto mb-4">
+                                            <span class="avatar-title rounded-circle bg-soft-primary font-size-24">
+                                                <i class="ri-money-dollar-circle-line text-primary"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="mb-1">Payments</h5>
+                                        <p class="text-muted">Secure and automated freight payment processing</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <div class="avatar-sm mx-auto mb-4">
+                                            <span class="avatar-title rounded-circle bg-soft-success font-size-24">
+                                                <i class="ri-bar-chart-2-line text-success"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="mb-1">Analytics</h5>
+                                        <p class="text-muted">Real-time insights and reporting</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <div class="avatar-sm mx-auto mb-4">
+                                            <span class="avatar-title rounded-circle bg-soft-warning font-size-24">
+                                                <i class="ri-shield-check-line text-warning"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="mb-1">Security</h5>
+                                        <p class="text-muted">Enterprise-grade security standards</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <div class="avatar-sm mx-auto mb-4">
+                                            <span class="avatar-title rounded-circle bg-soft-info font-size-24">
+                                                <i class="ri-flashlight-line text-info"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="mb-1">Fast Processing</h5>
+                                        <p class="text-muted">Quick and efficient transaction handling</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end features row -->
+
+                </div> <!-- container-fluid -->
             </div>
+            <!-- End Page-content -->
+
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <script>document.write(new Date().getFullYear())</script> © FPay - Freight Payment Platform
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-sm-end d-none d-sm-block">
+                                Deployed on Azure | Build: v1.0.0 | Environment: Production
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
+        <!-- end main content-->
 
-        <footer>
-            <p>Deployed on Azure | Build: v1.0.0 | Environment: ${ENVIRONMENT}</p>
-        </footer>
     </div>
+    <!-- END layout-wrapper -->
+
+    <!-- Right bar overlay-->
+    <div class="rightbar-overlay"></div>
+
+    <!-- JAVASCRIPT -->
+    <script src="assets/libs/jquery/jquery.min.js"></script>
+    <script src="assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/libs/metismenu/metisMenu.min.js"></script>
+    <script src="assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="assets/libs/node-waves/waves.min.js"></script>
+
+    <script src="assets/js/app.js"></script>
 
     <script>
-        // Mobile menu toggle
-        function toggleMenu() {
-            const navLinks = document.getElementById('navLinks');
-            const hamburger = document.querySelector('.hamburger');
-            navLinks.classList.toggle('active');
-            hamburger.classList.toggle('active');
-        }
-
         // API Health Check
         async function checkSystemHealth() {
             const statusElement = document.getElementById('systemStatus');
-            const statsGrid = document.getElementById('statsGrid');
+            const statsRow = document.getElementById('statsRow');
 
             try {
                 const response = await fetch('/api/health');
                 const data = await response.json();
 
                 if (response.ok && data.status === 'healthy') {
-                    statusElement.textContent = '✓ System Online';
-                    statusElement.className = 'status';
+                    statusElement.innerHTML = '<i class="mdi mdi-check-circle"></i> System Online';
+                    statusElement.className = 'badge badge-soft-success font-size-12';
 
                     // Show stats
-                    statsGrid.style.display = 'grid';
+                    statsRow.style.display = 'flex';
                     document.getElementById('dbStatus').textContent =
-                        data.mongodb === 'connected' ? '✓' : '✗';
-                    document.getElementById('apiStatus').textContent = '✓';
+                        data.mongodb === 'connected' ? 'Connected' : 'Disconnected';
+                    document.getElementById('apiStatus').textContent = 'Online';
 
                     // Format uptime
                     const uptime = Math.floor(data.uptime);
                     const hours = Math.floor(uptime / 3600);
                     const minutes = Math.floor((uptime % 3600) / 60);
-                    document.getElementById('uptime').textContent =
-                        `${hours}h ${minutes}m`;
+                    document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
                 } else {
                     throw new Error('System unhealthy');
                 }
             } catch (error) {
-                statusElement.textContent = '✗ System Offline';
-                statusElement.className = 'status offline';
+                statusElement.innerHTML = '<i class="mdi mdi-close-circle"></i> System Offline';
+                statusElement.className = 'badge badge-soft-danger font-size-12';
                 console.error('Health check failed:', error);
             }
         }
 
-        // Display build information
+        // Check system health on load
         document.addEventListener('DOMContentLoaded', function() {
-            const footer = document.querySelector('footer p');
-            const environment = footer.textContent.includes('${ENVIRONMENT}')
-                ? footer.textContent.replace('${ENVIRONMENT}', 'Production')
-                : footer.textContent;
-            footer.textContent = environment;
-
-            // Check system health on load
             checkSystemHealth();
-
             // Refresh health check every 30 seconds
             setInterval(checkSystemHealth, 30000);
         });
     </script>
-        </div>
-    </div>
 </body>
+
 </html>
