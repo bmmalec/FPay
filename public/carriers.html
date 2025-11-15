@@ -486,10 +486,10 @@
         }
 
         async function loadCarriers(page = 1) {
-            const container = document.getElementById('carriersTable');
-            container.innerHTML = '<div class="loading">Loading carriers...</div>';
-
             try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('carriersTableContainer').style.display = 'none';
+
                 const search = document.getElementById('searchInput').value;
                 const statusFilter = document.getElementById('statusFilter').value;
                 const serviceFilter = document.getElementById('serviceFilter').value;
@@ -504,42 +504,34 @@
                 const data = await res.json();
 
                 if (data.success && data.data.length > 0) {
-                    let html = '<div style="overflow-x: auto;"><table>';
-                    html += '<thead><tr>';
-                    html += '<th>Company Name</th>';
-                    html += '<th>MC / DOT</th>';
-                    html += '<th>Location</th>';
-                    html += '<th>Services</th>';
-                    html += '<th style="text-align: center;">Status</th>';
-                    html += '<th style="text-align: center;">Actions</th>';
-                    html += '</tr></thead><tbody>';
-
+                    let html = '';
                     data.data.forEach(carrier => {
                         html += '<tr>';
                         html += `<td><strong>${carrier.companyName}</strong>`;
                         if (carrier.generatedByAI) {
-                            html += '<br/><small style="color: #667eea;">🤖 AI Generated</small>';
+                            html += '<br/><small class="text-info">🤖 AI Generated</small>';
                         }
                         html += '</td>';
-                        html += `<td><small>${carrier.mcNumber}<br/>${carrier.dotNumber}</small></td>`;
-                        html += `<td>${carrier.address.city}, ${carrier.address.state}</td>`;
+                        html += `<td><small>MC: ${carrier.mcNumber}<br/>DOT: ${carrier.dotNumber}</small></td>`;
+                        html += `<td><small>${carrier.contactEmail || 'N/A'}<br/>${carrier.contactPhone || 'N/A'}</small></td>`;
                         html += `<td><small>${carrier.serviceTypes.join(', ')}</small></td>`;
-                        html += `<td style="text-align: center;"><span class="status-badge ${getStatusBadgeClass(carrier.status)}">${getStatusLabel(carrier.status)}</span></td>`;
-                        html += '<td style="text-align: center;"><div class="action-buttons">';
-                        html += `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em;" onclick="viewCarrier('${carrier._id}')">👁️ View</button>`;
-                        html += `<button class="btn btn-warning" style="padding: 6px 12px; font-size: 0.85em;" onclick="editCarrier('${carrier._id}')">✏️ Edit</button>`;
+                        html += `<td><span class="badge badge-soft-${getStatusBadgeClass(carrier.status)}">${getStatusLabel(carrier.status)}</span></td>`;
+                        html += '<td>';
+                        html += `<button class="btn btn-sm btn-info" onclick="viewCarrier('${carrier._id}')"><i class="ri-eye-line"></i></button> `;
+                        html += `<button class="btn btn-sm btn-warning" onclick="editCarrier('${carrier._id}')"><i class="ri-edit-line"></i></button> `;
                         if (carrier.status === 'pending_approval') {
-                            html += `<button class="btn btn-success" style="padding: 6px 12px; font-size: 0.85em;" onclick="approveCarrier('${carrier._id}')">✅ Approve</button>`;
+                            html += `<button class="btn btn-sm btn-success" onclick="approveCarrier('${carrier._id}')"><i class="ri-check-line"></i></button> `;
                         }
                         if (carrier.status === 'active') {
-                            html += `<button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85em;" onclick="deactivateCarrier('${carrier._id}')">🚫 Deactivate</button>`;
+                            html += `<button class="btn btn-sm btn-danger" onclick="deactivateCarrier('${carrier._id}')"><i class="ri-close-line"></i></button>`;
                         }
-                        html += '</div></td>';
+                        html += '</td>';
                         html += '</tr>';
                     });
 
-                    html += '</tbody></table></div>';
-                    container.innerHTML = html;
+                    document.getElementById('carriersBody').innerHTML = html;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('carriersTableContainer').style.display = 'block';
 
                     // Update pagination
                     if (data.pagination) {
@@ -549,18 +541,17 @@
                         document.getElementById('nextPage').disabled = !pag.hasNext;
                     }
                 } else {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No carriers found</h3>
-                            <p>Try adjusting your search filters or add a new carrier</p>
-                            <button class="btn btn-success" onclick="showCreateModal()">➕ Add Your First Carrier</button>
-                        </div>
-                    `;
+                    document.getElementById('carriersBody').innerHTML = '<tr><td colspan="6" class="text-center">No carriers found</td></tr>';
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('carriersTableContainer').style.display = 'block';
                 }
 
                 await loadStatistics();
             } catch (error) {
-                container.innerHTML = `<div class="empty-state"><h3 style="color: #dc3545;">Error loading carriers</h3><p>${error.message}</p></div>`;
+                console.error('Error loading carriers:', error);
+                document.getElementById('carriersBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading carriers</td></tr>';
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('carriersTableContainer').style.display = 'block';
             }
         }
 
