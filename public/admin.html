@@ -463,25 +463,27 @@
 
         async function loadStats() {
             try {
-                const [invoicesRes, paymentsRes] = await Promise.all([
+                const [invoicesRes, paymentsRes, carriersRes, ediRes] = await Promise.all([
                     fetch('/api/invoices'),
-                    fetch('/api/payments')
+                    fetch('/api/payments'),
+                    fetch('/api/carriers'),
+                    fetch('/api/edi210')
                 ]);
 
                 const invoicesData = await invoicesRes.json();
                 const paymentsData = await paymentsRes.json();
+                const carriersData = await carriersRes.json();
+                const ediData = await ediRes.json();
 
                 const invoices = invoicesData.data || [];
                 const payments = paymentsData.data || [];
+                const carriers = carriersData.data || [];
+                const ediDocs = ediData.data || [];
 
-                document.getElementById('invoiceCount').textContent = invoices.length;
-                document.getElementById('paymentCount').textContent = payments.length;
-
-                const invoiceTotal = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-                const paymentTotal = payments.reduce((sum, pay) => sum + (pay.totalAmount || pay.amount || 0), 0);
-
-                document.getElementById('totalInvoiceAmount').textContent = `$${invoiceTotal.toFixed(2)}`;
-                document.getElementById('totalPaymentAmount').textContent = `$${paymentTotal.toFixed(2)}`;
+                document.getElementById('statsInvoices').textContent = invoices.length;
+                document.getElementById('statsPayments').textContent = payments.length;
+                document.getElementById('statsCarriers').textContent = carriers.length;
+                document.getElementById('statsEDI').textContent = ediDocs.length;
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
