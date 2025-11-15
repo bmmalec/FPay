@@ -21,6 +21,7 @@
             <h2 class="mb-4">🔒 Admin Access</h2>
             <p class="text-muted mb-4">Enter PIN to access admin panel</p>
             <input type="password" id="pinInput" class="form-control form-control-lg text-center mb-3" placeholder="Enter PIN" onkeyup="if(event.key==='Enter') checkPin()">
+            <div id="pinError" class="alert alert-danger" style="display: none;">Incorrect PIN. Please try again.</div>
             <button class="btn btn-primary btn-lg w-100" onclick="checkPin()">Unlock</button>
             <p class="mt-3 text-muted small">Default PIN: 1234</p>
         </div>
@@ -437,8 +438,8 @@
         }
 
         function showAdminPanel() {
-            document.getElementById('pinOverlay').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
+            document.getElementById('pinScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
             isAuthenticated = true;
             loadStats();
         }
