@@ -250,9 +250,15 @@ async function analyzeErrors() {
 ## Error Status Workflow
 
 1. **new** - Error just occurred, needs investigation
-2. **investigating** - Error is being analyzed
-3. **resolved** - Error has been fixed
-4. **ignored** - Error is expected/acceptable, no action needed
+2. **investigating** - Error is being analyzed (Claude Code working on it)
+3. **fixed** - Code has been fixed and deployed (awaiting user verification)
+4. **resolved** - Error has been verified as fixed by user
+5. **ignored** - Error is expected/acceptable, no action needed
+
+### Recommended Workflow:
+- **Claude Code** marks errors as `fixed` after deploying the fix
+- **User** verifies the fix works and changes status to `resolved`
+- This ensures all fixes are tested before being marked as resolved
 
 ## Best Practices
 

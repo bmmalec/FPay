@@ -54,7 +54,17 @@
                             <li><a href="/invoices.html"><i class="ri-file-list-3-line"></i><span>Invoices</span></a></li>
                             <li><a href="/payments.html"><i class="ri-money-dollar-circle-line"></i><span>Payments</span></a></li>
                             <li><a href="/carriers.html"><i class="ri-truck-line"></i><span>Carriers</span></a></li>
-                            <li><a href="/admin.html" class="active"><i class="ri-settings-3-line"></i><span>Admin</span></a></li>
+                            <li class="mm-active">
+                                <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                    <i class="ri-settings-3-line"></i>
+                                    <span>Admin</span>
+                                </a>
+                                <ul class="sub-menu mm-collapse mm-show" aria-expanded="true">
+                                    <li><a href="/errors.html">Error Logs</a></li>
+                                    <li><a href="/admin.html" class="active">Database Management</a></li>
+                                    <li><a href="/edi-generator.html">EDI Generation</a></li>
+                                </ul>
+                            </li>
                         </ul>
                     </div>
                 </div>

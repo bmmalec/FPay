@@ -74,7 +74,7 @@ const errorLogSchema = new mongoose.Schema({
     // Error management
     status: {
         type: String,
-        enum: ['new', 'investigating', 'resolved', 'ignored'],
+        enum: ['new', 'investigating', 'fixed', 'resolved', 'ignored'],
         default: 'new'
     },
     severity: {
