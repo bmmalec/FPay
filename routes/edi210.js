@@ -6,6 +6,53 @@ const EDIDocument = require('../models/EDIDocument');
 const Anthropic = require('@anthropic-ai/sdk');
 
 /**
+ * GET /api/edi210
+ * Get all EDI 210 documents with pagination (alias for /documents)
+ */
+router.get('/', async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 20,
+            status,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+
+        const query = { ediType: '210' };
+        if (status) query.status = status;
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+        const [documents, total] = await Promise.all([
+            EDIDocument.find(query)
+                .sort(sortOptions)
+                .limit(parseInt(limit))
+                .skip(skip),
+            EDIDocument.countDocuments(query)
+        ]);
+
+        res.json({
+            success: true,
+            data: documents,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(total / parseInt(limit)),
+                totalItems: total,
+                itemsPerPage: parseInt(limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching EDI documents:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
  * POST /api/edi210/generate
  * Generate EDI 210 document and save to database
  */
@@ -544,6 +591,62 @@ router.get('/statistics', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching statistics:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/edi210/documents/:id/download
+ * Download EDI document as text file
+ */
+router.get('/documents/:id/download', async (req, res) => {
+    try {
+        const document = await EDIDocument.findById(req.params.id);
+
+        if (!document) {
+            return res.status(404).json({
+                success: false,
+                error: 'EDI document not found'
+            });
+        }
+
+        // Set headers for file download
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename=EDI210_${document.controlNumber || document._id}.txt`);
+        res.send(document.ediContent);
+    } catch (error) {
+        console.error('Error downloading EDI document:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * DELETE /api/edi210/documents/:id
+ * Delete an EDI document
+ */
+router.delete('/documents/:id', async (req, res) => {
+    try {
+        const document = await EDIDocument.findByIdAndDelete(req.params.id);
+
+        if (!document) {
+            return res.status(404).json({
+                success: false,
+                error: 'EDI document not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'EDI document deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting EDI document:', error);
         res.status(500).json({
             success: false,
             error: error.message

@@ -266,7 +266,7 @@
 
             try {
                 showMessage('Generating EDI 210 document...', 'info');
-                const response = await fetch('/api/edi210', {
+                const response = await fetch('/api/edi210/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(ediData)
@@ -352,7 +352,7 @@
 
         async function viewEDI(id) {
             try {
-                const response = await fetch(`/api/edi210/${id}`);
+                const response = await fetch(`/api/edi210/documents/${id}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -383,7 +383,7 @@
 
         async function downloadEDI(id) {
             try {
-                const response = await fetch(`/api/edi210/${id}/download`);
+                const response = await fetch(`/api/edi210/documents/${id}/download`);
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -401,7 +401,7 @@
             if (!confirm('Are you sure you want to delete this EDI document?')) return;
 
             try {
-                const response = await fetch(`/api/edi210/${id}`, { method: 'DELETE' });
+                const response = await fetch(`/api/edi210/documents/${id}`, { method: 'DELETE' });
                 const data = await response.json();
 
                 if (data.success) {
