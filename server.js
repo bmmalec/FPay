@@ -57,17 +57,22 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
+// Import middleware
+const { errorLogger, errorHandler } = require('./middleware/errorLogger');
+
 // Import routes
 const paymentsRouter = require('./routes/payments');
 const invoicesRouter = require('./routes/invoices');
 const edi210Router = require('./routes/edi210');
 const carriersRouter = require('./routes/carriers');
+const errorsRouter = require('./routes/errors');
 
 // API Routes
 app.use('/api/payments', paymentsRouter);
 app.use('/api/invoices', invoicesRouter);
 app.use('/api/edi210', edi210Router);
 app.use('/api/carriers', carriersRouter);
+app.use('/api/errors', errorsRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -89,7 +94,8 @@ app.get('/api', (req, res) => {
             payments: '/api/payments',
             invoices: '/api/invoices',
             edi210: '/api/edi210',
-            carriers: '/api/carriers'
+            carriers: '/api/carriers',
+            errors: '/api/errors'
         }
     });
 });
@@ -110,13 +116,9 @@ app.use('*', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
+// errorLogger logs to database, errorHandler sends response
+app.use(errorLogger);
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {
